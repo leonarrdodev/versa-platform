@@ -1,0 +1,38 @@
+# Dependências
+node_modules/
+
+# Builds
+dist/
+build/
+coverage/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Cache e arquivos temporários
+.cache/
+.tmp/
+temp/
+
+# TypeScript
+*.tsbuildinfo
+
+# Testes
+.nyc_output/
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

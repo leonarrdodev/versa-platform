@@ -1,0 +1,20 @@
+{
+  "name": "versa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Versa - Inteligência de Varejo",
+  "type": "module",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@11.3.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=11 <12"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @versa/api dev",
+    "dev:worker": "pnpm --filter @versa/worker dev",
+    "build": "pnpm --recursive run build",
+    "typecheck": "pnpm --recursive run typecheck",
+    "test": "pnpm --recursive run test"
+  }
+}
