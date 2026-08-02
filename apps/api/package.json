@@ -8,9 +8,11 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:check": "tsx src/database-check.ts"
   },
   "dependencies": {
+    "@versa/database": "workspace:*",
     "fastify": "^5.11.0"
   },
   "devDependencies": {
