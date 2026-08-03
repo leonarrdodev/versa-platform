@@ -58,6 +58,12 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  packages/event-contracts:
+    devDependencies:
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+
 packages:
 
   '@emnapi/core@2.0.0-alpha.3':
