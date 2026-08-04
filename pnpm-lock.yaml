@@ -42,6 +42,25 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
 
+  modules/catalog:
+    dependencies:
+      '@versa/shared-kernel':
+        specifier: workspace:*
+        version: link:../../packages/shared-kernel
+      shared-kernel@workspace:*:
+        specifier: 'link: @versa/shared-kernel@workspace:*'
+        version: 'link: @versa/shared-kernel@workspace:*'
+    devDependencies:
+      '@types/node':
+        specifier: ^26.1.2
+        version: 26.1.2
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@26.1.2)(vite@8.2.0(@types/node@26.1.2)(esbuild@0.28.1)(tsx@4.23.1))
+
   packages/database:
     dependencies:
       pg:
