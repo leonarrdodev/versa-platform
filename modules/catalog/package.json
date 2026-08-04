@@ -17,6 +17,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@versa/event-contracts": "workspace:*",
     "@versa/shared-kernel": "workspace:*",
     "shared-kernel@workspace:*": "link: @versa/shared-kernel@workspace:*"
   },

@@ -44,6 +44,9 @@ importers:
 
   modules/catalog:
     dependencies:
+      '@versa/event-contracts':
+        specifier: workspace:*
+        version: link:../../packages/event-contracts
       '@versa/shared-kernel':
         specifier: workspace:*
         version: link:../../packages/shared-kernel

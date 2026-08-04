@@ -32,3 +32,23 @@ export {
 export {
   ProductName,
 } from './domain/product/product-name.js';
+
+export {
+  INITIAL_PRODUCT_STATUS,
+  isProductStatus,
+  PRODUCT_STATUSES,
+} from './domain/product/product-status.js';
+
+export type {
+  ProductStatus,
+} from './domain/product/product-status.js';
+
+export {
+  Product,
+  PRODUCT_AGGREGATE_TYPE,
+} from './domain/product/product.js';
+
+export type {
+  CreateProductInput,
+  ProductCreationDependencies,
+} from './domain/product/product.js';
