@@ -52,3 +52,32 @@ export type {
   CreateProductInput,
   ProductCreationDependencies,
 } from './domain/product/product.js';
+
+export type {
+  ProductRepository,
+} from './application/ports/product-repository.js';
+
+export type {
+  OutboxRepository,
+} from './application/ports/outbox-repository.js';
+
+export type {
+  CatalogTransaction,
+  CatalogUnitOfWork,
+} from './application/ports/catalog-unit-of-work.js';
+
+export type {
+  CreateProductCommand,
+} from './application/create-product/create-product-command.js';
+
+export type {
+  CreateProductResult,
+} from './application/create-product/create-product-result.js';
+
+export {
+  CreateProductHandler,
+} from './application/create-product/create-product-handler.js';
+
+export type {
+  CreateProductHandlerDependencies,
+} from './application/create-product/create-product-handler.js';
