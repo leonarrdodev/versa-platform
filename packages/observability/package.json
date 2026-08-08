@@ -1,5 +1,5 @@
 {
-  "name": "@versa/catalog",
+  "name": "@versa/observability",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,13 +17,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@versa/event-contracts": "workspace:*",
-    "@versa/shared-kernel": "workspace:*",
-    "pg": "^8.22.0"
+    "@versa/shared-kernel": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
-    "@types/pg": "^8.20.2",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }
