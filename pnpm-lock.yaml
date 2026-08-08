@@ -50,6 +50,9 @@ importers:
       '@versa/shared-kernel':
         specifier: workspace:*
         version: link:../../packages/shared-kernel
+      pg:
+        specifier: ^8.22.0
+        version: 8.22.0
       shared-kernel@workspace:*:
         specifier: 'link: @versa/shared-kernel@workspace:*'
         version: 'link: @versa/shared-kernel@workspace:*'
@@ -57,6 +60,9 @@ importers:
       '@types/node':
         specifier: ^26.1.2
         version: 26.1.2
+      '@types/pg':
+        specifier: ^8.20.2
+        version: 8.20.2
       typescript:
         specifier: ^7.0.2
         version: 7.0.2

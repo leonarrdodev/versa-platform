@@ -81,3 +81,15 @@ export {
 export type {
   CreateProductHandlerDependencies,
 } from './application/create-product/create-product-handler.js';
+
+export {
+  PostgresProductRepository,
+} from './infrastructure/postgres/postgres-product-repository.js';
+
+export {
+  PostgresOutboxRepository,
+} from './infrastructure/postgres/postgres-outbox-repository.js';
+
+export {
+  PostgresCatalogUnitOfWork,
+} from './infrastructure/postgres/postgres-catalog-unit-of-work.js';
