@@ -47,6 +47,9 @@ const app = buildApp({
     logger,
 
     monotonicClock,
+
+    getProductByIdHandler:
+  catalog.getProductByIdHandler,
   },
 });
 

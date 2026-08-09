@@ -1,6 +1,8 @@
 import {
   CreateProductHandler,
   PostgresCatalogUnitOfWork,
+  GetProductByIdHandler,
+PostgresProductReadRepository,
 } from '@versa/catalog';
 
 import {
@@ -27,6 +29,9 @@ export interface CatalogComposition {
   readonly idGenerator:
     IdGenerator;
 
+    readonly getProductByIdHandler:
+  GetProductByIdHandler;
+
   close(): Promise<void>;
 }
 
@@ -47,6 +52,16 @@ CatalogComposition {
       pool,
     );
 
+    const productReadRepository =
+  new PostgresProductReadRepository(
+    pool,
+  );
+
+const getProductByIdHandler =
+  new GetProductByIdHandler(
+    productReadRepository,
+  );
+
   const createProductHandler =
     new CreateProductHandler({
       clock,
@@ -55,11 +70,12 @@ CatalogComposition {
     });
 
   return {
-    createProductHandler,
-    idGenerator,
+  createProductHandler,
+  getProductByIdHandler,
+  idGenerator,
 
-    async close(): Promise<void> {
-      await pool.end();
-    },
-  };
+  async close(): Promise<void> {
+    await pool.end();
+  },
+};
 }

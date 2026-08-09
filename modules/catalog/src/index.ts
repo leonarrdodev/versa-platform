@@ -93,3 +93,20 @@ export {
 export {
   PostgresCatalogUnitOfWork,
 } from './infrastructure/postgres/postgres-catalog-unit-of-work.js';
+
+export type {
+  ProductReadModel,
+  ProductReadRepository,
+} from './application/ports/product-read-repository.js';
+
+export {
+  GetProductByIdHandler,
+} from './application/get-product-by-id/get-product-by-id-handler.js';
+
+export type {
+  GetProductByIdQuery,
+} from './application/get-product-by-id/get-product-by-id-handler.js';
+
+export {
+  PostgresProductReadRepository,
+} from './infrastructure/postgres/postgres-product-read-repository.js';

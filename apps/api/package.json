@@ -10,7 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "db:check": "tsx src/database-check.ts",
-    "db:migrate": "tsx src/database-migrate.ts"
+    "db:migrate": "tsx src/database-migrate.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+"typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit"
   },
   "dependencies": {
     "@versa/catalog": "workspace:*",

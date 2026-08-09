@@ -14,7 +14,7 @@
     "dev:api": "pnpm --filter @versa/api dev",
     "dev:worker": "pnpm --filter @versa/worker dev",
     "build": "pnpm --recursive run build",
-    "typecheck": "pnpm --filter './packages/**' build && pnpm --recursive run typecheck",
+    "typecheck": "pnpm --filter './packages/**' build && pnpm --filter './modules/**' build && pnpm --recursive run typecheck",
     "test": "pnpm --recursive run test",
     "db:migrate": "pnpm --filter @versa/database build && pnpm --filter @versa/api db:migrate"
   }

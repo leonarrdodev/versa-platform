@@ -1,5 +1,6 @@
 import type {
   CreateProductHandler,
+  GetProductByIdHandler,
 } from '@versa/catalog';
 
 import {
@@ -41,6 +42,13 @@ export interface ProductsRouteDependencies {
 
   readonly monotonicClock:
     MonotonicClock;
+
+    readonly getProductByIdHandler:
+  GetProductByIdHandler;
+}
+
+interface GetProductParams {
+  readonly id: string;
 }
 
 export function createProductsRoute(
@@ -226,6 +234,74 @@ export function createProductsRoute(
 
           throw error;
         }
+      },
+    );
+   app.get<{
+      Params: GetProductParams;
+      Headers: CreateProductHeaders;
+    }>(
+      '/products/:id',
+      {
+        schema: {
+          headers: {
+            type: 'object',
+
+            required: [
+              'x-tenant-id',
+            ],
+
+            properties: {
+              'x-tenant-id': {
+                type: 'string',
+              },
+            },
+          },
+
+          params: {
+            type: 'object',
+
+            required: [
+              'id',
+            ],
+
+            properties: {
+              id: {
+                type: 'string',
+              },
+            },
+          },
+        },
+      },
+
+      async (
+        request,
+        reply,
+      ) => {
+        const product =
+          await dependencies
+            .getProductByIdHandler
+            .execute({
+              tenantId:
+                request.headers[
+                  'x-tenant-id'
+                ],
+
+              productId:
+                request.params.id,
+            });
+
+        if (product === null) {
+          return reply
+            .code(404)
+            .send({
+              error:
+                'PRODUCT_NOT_FOUND',
+            });
+        }
+
+        return reply
+          .code(200)
+          .send(product);
       },
     );
   };
