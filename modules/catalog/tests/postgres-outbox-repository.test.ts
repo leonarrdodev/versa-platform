@@ -14,7 +14,9 @@ import {
 } from '../src/index.js';
 
 import {
+  CAUSATION_ID,
   CATEGORY_ID,
+  CORRELATION_ID,
   EVENT_ID,
   PRODUCT_ID,
   TENANT_ID,
@@ -23,12 +25,17 @@ import {
 
 describe('PostgresOutboxRepository', () => {
   it('inserts a domain event into the outbox', async () => {
-    const query = vi
-      .fn()
-      .mockResolvedValue({
-        rows: [],
-        rowCount: 1,
-      });
+    const query = vi.fn(
+      async (
+        _sql: string,
+        _values: readonly unknown[],
+      ) => {
+        return {
+          rows: [],
+          rowCount: 1,
+        };
+      },
+    );
 
     const client = {
       query,
@@ -69,19 +76,29 @@ describe('PostgresOutboxRepository', () => {
     expect(values).toEqual([
       EVENT_ID,
       TENANT_ID,
+      CORRELATION_ID,
+      CAUSATION_ID,
       'Product',
       PRODUCT_ID,
       'ProductCreated',
       1,
       JSON.stringify({
-        productId: PRODUCT_ID,
-        sku: 'BLUSA-001',
+        productId:
+          PRODUCT_ID,
+
+        sku:
+          'BLUSA-001',
+
         name:
           'Blusa Canelada Feminina',
-        categoryId: CATEGORY_ID,
+
+        categoryId:
+          CATEGORY_ID,
+
         createdAt:
           '2026-08-06T01:00:00.000Z',
       }),
+
       '2026-08-06T01:00:00.000Z',
     ]);
   });

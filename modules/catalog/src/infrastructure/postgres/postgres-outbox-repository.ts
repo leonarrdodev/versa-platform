@@ -17,7 +17,8 @@ implements OutboxRepository {
   ) {}
 
   async append(
-    events: readonly ProductCreatedEvent[],
+    events:
+      readonly ProductCreatedEvent[],
   ): Promise<void> {
     for (const event of events) {
       await this.client.query(
@@ -25,6 +26,8 @@ implements OutboxRepository {
           INSERT INTO event_outbox (
             event_id,
             tenant_id,
+            correlation_id,
+            causation_id,
             aggregate_type,
             aggregate_id,
             event_name,
@@ -39,18 +42,24 @@ implements OutboxRepository {
             $4,
             $5,
             $6,
-            $7::jsonb,
-            $8
+            $7,
+            $8,
+            $9::jsonb,
+            $10
           )
         `,
         [
           event.eventId,
           event.tenantId,
+          event.correlationId,
+          event.causationId,
           event.aggregateType,
           event.aggregateId,
           event.eventName,
           event.eventVersion,
-          JSON.stringify(event.payload),
+          JSON.stringify(
+            event.payload,
+          ),
           event.occurredAt,
         ],
       );

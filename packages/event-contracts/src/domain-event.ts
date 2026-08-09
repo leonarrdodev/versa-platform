@@ -1,7 +1,12 @@
+export interface DomainEventTraceContext {
+  readonly correlationId: string;
+  readonly causationId: string | null;
+}
+
 export interface DomainEventEnvelope<
   TName extends string,
   TPayload,
-> {
+> extends DomainEventTraceContext {
   readonly eventId: string;
   readonly eventName: TName;
   readonly eventVersion: number;

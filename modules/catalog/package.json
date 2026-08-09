@@ -18,11 +18,12 @@
   },
   "dependencies": {
     "@versa/event-contracts": "workspace:*",
+    "@versa/observability": "workspace:*",
     "@versa/shared-kernel": "workspace:*",
     "pg": "^8.22.0"
   },
   "devDependencies": {
-    "@types/node": "^26.1.2",
+    "@types/node": "^24.13.3",
     "@types/pg": "^8.20.2",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"

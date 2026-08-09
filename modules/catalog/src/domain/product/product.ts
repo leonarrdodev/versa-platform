@@ -4,6 +4,7 @@ import {
 } from '@versa/event-contracts';
 
 import type {
+  DomainEventTraceContext,
   ProductCreatedEvent,
 } from '@versa/event-contracts';
 
@@ -56,6 +57,9 @@ export interface CreateProductInput {
 export interface ProductCreationDependencies {
   readonly clock: Clock;
   readonly idGenerator: IdGenerator;
+
+  readonly eventContext:
+    DomainEventTraceContext;
 }
 
 interface ProductState {
@@ -70,7 +74,8 @@ interface ProductState {
 }
 
 export class Product {
-  private readonly pendingEvents: ProductCreatedEvent[] = [];
+  private readonly pendingEvents:
+    ProductCreatedEvent[] = [];
 
   private constructor(
     private readonly state: ProductState,
@@ -80,13 +85,16 @@ export class Product {
     input: CreateProductInput,
     dependencies: ProductCreationDependencies,
   ): Product {
-    const createdAt = dependencies.clock.now();
+    const createdAt =
+      dependencies.clock.now();
 
-    const productId = productIdFromUuid(
-      dependencies.idGenerator.generate(),
-    );
+    const productId =
+      productIdFromUuid(
+        dependencies.idGenerator.generate(),
+      );
 
-    const eventId = dependencies.idGenerator.generate();
+    const eventId =
+      dependencies.idGenerator.generate();
 
     const product = new Product({
       id: productId,
@@ -95,24 +103,49 @@ export class Product {
       name: input.name,
       categoryId: input.categoryId,
       status: INITIAL_PRODUCT_STATUS,
-      createdAt: new Date(createdAt.getTime()),
-      updatedAt: new Date(createdAt.getTime()),
+      createdAt:
+        new Date(createdAt.getTime()),
+      updatedAt:
+        new Date(createdAt.getTime()),
     });
 
     product.pendingEvents.push({
       eventId,
-      eventName: PRODUCT_CREATED_EVENT_NAME,
-      eventVersion: PRODUCT_CREATED_EVENT_VERSION,
-      tenantId: input.tenantId,
-      aggregateType: PRODUCT_AGGREGATE_TYPE,
-      aggregateId: productId,
-      occurredAt: createdAt.toISOString(),
+
+      eventName:
+        PRODUCT_CREATED_EVENT_NAME,
+
+      eventVersion:
+        PRODUCT_CREATED_EVENT_VERSION,
+
+      tenantId:
+        input.tenantId,
+
+      correlationId:
+        dependencies.eventContext
+          .correlationId,
+
+      causationId:
+        dependencies.eventContext
+          .causationId,
+
+      aggregateType:
+        PRODUCT_AGGREGATE_TYPE,
+
+      aggregateId:
+        productId,
+
+      occurredAt:
+        createdAt.toISOString(),
+
       payload: {
         productId,
         sku: input.sku.value,
         name: input.name.value,
-        categoryId: input.categoryId,
-        createdAt: createdAt.toISOString(),
+        categoryId:
+          input.categoryId,
+        createdAt:
+          createdAt.toISOString(),
       },
     });
 
@@ -155,8 +188,11 @@ export class Product {
     );
   }
 
-  pullDomainEvents(): ProductCreatedEvent[] {
-    const events = [...this.pendingEvents];
+  pullDomainEvents():
+    ProductCreatedEvent[] {
+    const events = [
+      ...this.pendingEvents,
+    ];
 
     this.pendingEvents.length = 0;
 

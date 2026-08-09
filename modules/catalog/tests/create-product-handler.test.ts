@@ -30,6 +30,10 @@ import type {
   ProductRepository,
 } from '../src/index.js';
 
+import type {
+  ExecutionContext,
+} from '@versa/observability';
+
 class FixedClock implements Clock {
   constructor(
     private readonly fixedDate: Date,
@@ -141,6 +145,22 @@ const EVENT_ID = parseUuid(
   '22222222-2222-4222-8222-222222222222',
 );
 
+const CORRELATION_ID = parseUuid(
+  '55555555-5555-4555-8555-555555555555',
+);
+
+const EXECUTION_ID = parseUuid(
+  '66666666-6666-4666-8666-666666666666',
+);
+
+const EXECUTION_CONTEXT = {
+  correlationId:
+    CORRELATION_ID,
+
+  executionId:
+    EXECUTION_ID,
+} satisfies ExecutionContext;
+
 const TENANT_ID =
   '33333333-3333-4333-8333-333333333333';
 
@@ -189,7 +209,8 @@ describe('CreateProductHandler', () => {
       sku: '  blusa-001  ',
       name: '  Blusa   Canelada  ',
       categoryId: CATEGORY_ID,
-    });
+    },
+  EXECUTION_CONTEXT,);
 
     expect(result).toEqual({
       id: PRODUCT_ID,
@@ -216,7 +237,8 @@ describe('CreateProductHandler', () => {
       sku: 'BLUSA-001',
       name: 'Blusa Canelada',
       categoryId: CATEGORY_ID,
-    });
+    },
+  EXECUTION_CONTEXT,);
 
     expect(
       unitOfWork.committedProducts,
@@ -247,7 +269,8 @@ describe('CreateProductHandler', () => {
       sku: 'BLUSA-001',
       name: 'Blusa Canelada',
       categoryId: CATEGORY_ID,
-    });
+    },
+  EXECUTION_CONTEXT,);
 
     expect(
       unitOfWork.transactionsStarted,
@@ -269,7 +292,8 @@ describe('CreateProductHandler', () => {
         sku: 'BLUSA-001',
         name: 'Blusa Canelada',
         categoryId: CATEGORY_ID,
-      }),
+      },
+  EXECUTION_CONTEXT,),
     ).rejects.toThrow(
       'Outbox persistence failed',
     );
@@ -295,7 +319,8 @@ describe('CreateProductHandler', () => {
         sku: 'SKU COM ESPAÇO',
         name: 'Blusa Canelada',
         categoryId: CATEGORY_ID,
-      }),
+      },
+  EXECUTION_CONTEXT,),
     ).rejects.toThrow(
       'Product SKU contains invalid characters',
     );

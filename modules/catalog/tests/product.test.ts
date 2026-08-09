@@ -70,6 +70,14 @@ const EVENT_ID = parseUuid(
   '22222222-2222-4222-8222-222222222222',
 );
 
+const CORRELATION_ID = parseUuid(
+  '55555555-5555-4555-8555-555555555555',
+);
+
+const CAUSATION_ID = parseUuid(
+  '66666666-6666-4666-8666-666666666666',
+);
+
 const TENANT_ID = parseTenantId(
   '33333333-3333-4333-8333-333333333333',
 );
@@ -101,7 +109,15 @@ function createProduct(): Product {
     },
     {
       clock,
-      idGenerator,
+  idGenerator,
+
+  eventContext: {
+    correlationId:
+      CORRELATION_ID,
+
+    causationId:
+      CAUSATION_ID,
+  },
     },
   );
 }
@@ -173,6 +189,8 @@ describe('Product', () => {
       eventName: PRODUCT_CREATED_EVENT_NAME,
       eventVersion: PRODUCT_CREATED_EVENT_VERSION,
       tenantId: TENANT_ID,
+      correlationId: CORRELATION_ID,
+      causationId: CAUSATION_ID,
       aggregateType: PRODUCT_AGGREGATE_TYPE,
       aggregateId: PRODUCT_ID,
       occurredAt: '2026-08-04T01:00:00.000Z',

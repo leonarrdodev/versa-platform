@@ -1,4 +1,8 @@
 import type {
+  ExecutionContext,
+} from '@versa/observability';
+
+import type {
   Clock,
   IdGenerator,
 } from '@versa/shared-kernel';
@@ -49,14 +53,16 @@ export class CreateProductHandler {
 
   async execute(
     command: CreateProductCommand,
+    context: ExecutionContext,
   ): Promise<CreateProductResult> {
     const tenantId = parseTenantId(
       command.tenantId,
     );
 
-    const categoryId = parseCategoryId(
-      command.categoryId,
-    );
+    const categoryId =
+      parseCategoryId(
+        command.categoryId,
+      );
 
     const sku = ProductSku.create(
       command.sku,
@@ -74,38 +80,55 @@ export class CreateProductHandler {
         name,
       },
       {
-        clock: this.dependencies.clock,
+        clock:
+          this.dependencies.clock,
+
         idGenerator:
           this.dependencies.idGenerator,
+
+        eventContext: {
+          correlationId:
+            context.correlationId,
+
+          causationId:
+            context.executionId,
+        },
       },
     );
 
     const events =
       product.pullDomainEvents();
 
-    await this.dependencies.unitOfWork.execute(
-      async (transaction) => {
-        await transaction.products.insert(
-          product,
-        );
+    await this.dependencies
+      .unitOfWork
+      .execute(
+        async (transaction) => {
+          await transaction
+            .products
+            .insert(product);
 
-        await transaction.outbox.append(
-          events,
-        );
-      },
-    );
+          await transaction
+            .outbox
+            .append(events);
+        },
+      );
 
     return {
       id: product.id,
       tenantId: product.tenantId,
       sku: product.sku.value,
       name: product.name.value,
-      categoryId: product.categoryId,
+      categoryId:
+        product.categoryId,
       status: product.status,
+
       createdAt:
-        product.createdAt.toISOString(),
+        product.createdAt
+          .toISOString(),
+
       updatedAt:
-        product.updatedAt.toISOString(),
+        product.updatedAt
+          .toISOString(),
     };
   }
 }

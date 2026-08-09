@@ -105,6 +105,13 @@ export function createProductFixture(): {
           PRODUCT_ID,
           EVENT_ID,
         ]),
+        eventContext: {
+  correlationId:
+    CORRELATION_ID,
+
+  causationId:
+    CAUSATION_ID,
+},
     },
   );
 
@@ -124,3 +131,13 @@ export function createProductFixture(): {
     event,
   };
 }
+
+export const CORRELATION_ID =
+  parseUuid(
+    '55555555-5555-4555-8555-555555555555',
+  );
+
+export const CAUSATION_ID =
+  parseUuid(
+    '66666666-6666-4666-8666-666666666666',
+  );

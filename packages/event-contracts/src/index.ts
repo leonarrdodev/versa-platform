@@ -10,4 +10,5 @@ export type {
 
 export type {
   DomainEventEnvelope,
+  DomainEventTraceContext,
 } from './domain-event.js';
