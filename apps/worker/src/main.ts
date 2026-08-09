@@ -1,29 +1,143 @@
-function shutdown(signal: NodeJS.Signals): void {
-  console.info(`[worker] Sinal ${signal} recebido`);
-  console.info('[worker] Worker encerrado');
+import {
+  setTimeout as delay,
+} from 'node:timers/promises';
 
-  process.stdin.pause();
+import {
+  createDatabasePool,
+} from '@versa/database';
+
+import {
+  PerformanceMonotonicClock,
+  StructuredLogger,
+  jsonConsoleSink,
+} from '@versa/observability';
+
+import {
+  RandomUuidGenerator,
+  SystemClock,
+} from '@versa/shared-kernel';
+
+import {
+  env,
+} from './config/env.js';
+
+import {
+  processNextOutboxEvent,
+} from './outbox/process-next-outbox-event.js';
+
+let stopping = false;
+
+function requestShutdown(
+  signal: NodeJS.Signals,
+): void {
+  stopping = true;
+
+  console.info(
+    `[worker] Sinal ${signal} recebido`,
+  );
 }
 
-function main(): void {
-  console.info('[worker] Worker iniciado');
+async function main():
+Promise<void> {
+  const pool =
+    createDatabasePool(
+      env.database,
+    );
 
-  // Mantém o processo ativo enquanto ainda não existe
-  // um consumidor real de eventos ou polling do banco.
-  process.stdin.resume();
+  const idGenerator =
+    new RandomUuidGenerator();
 
-  process.once('SIGINT', () => {
-    shutdown('SIGINT');
+  const systemClock =
+    new SystemClock();
+
+  const monotonicClock =
+    new PerformanceMonotonicClock();
+
+  const logger =
+    new StructuredLogger(
+      'worker',
+      systemClock,
+      jsonConsoleSink,
+    );
+
+  process.once(
+    'SIGINT',
+    () => {
+      requestShutdown(
+        'SIGINT',
+      );
+    },
+  );
+
+  process.once(
+    'SIGTERM',
+    () => {
+      requestShutdown(
+        'SIGTERM',
+      );
+    },
+  );
+
+  logger.info({
+    message:
+      'Worker started',
+
+    event:
+      'worker.started',
   });
 
-  process.once('SIGTERM', () => {
-    shutdown('SIGTERM');
-  });
+  try {
+    while (!stopping) {
+      try {
+        const processed =
+          await processNextOutboxEvent({
+            pool,
+            idGenerator,
+            logger,
+            monotonicClock,
+          });
+
+        if (!processed) {
+          await delay(
+            env.pollIntervalMs,
+          );
+        }
+      } catch (error) {
+        logger.error({
+          message:
+            'Worker iteration failed',
+
+          event:
+            'worker.iteration.failed',
+
+          error,
+        });
+
+        await delay(
+          env.pollIntervalMs,
+        );
+      }
+    }
+  } finally {
+    await pool.end();
+
+    logger.info({
+      message:
+        'Worker stopped',
+
+      event:
+        'worker.stopped',
+    });
+  }
 }
 
-try {
-  main();
-} catch (error) {
-  console.error('[worker] Falha inesperada', error);
-  process.exitCode = 1;
-}
+main().catch(
+  (error: unknown) => {
+    console.error(
+      '[worker] Falha fatal',
+      error,
+    );
+
+    process.exitCode = 1;
+  },
+);
