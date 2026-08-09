@@ -1,16 +1,71 @@
-import { buildApp } from './app.js';
+import {
+  PerformanceMonotonicClock,
+  StructuredLogger,
+  jsonConsoleSink,
+} from '@versa/observability';
 
-const app = buildApp();
+import {
+  SystemClock,
+} from '@versa/shared-kernel';
 
-const host = process.env.API_HOST ?? '0.0.0.0';
-const port = Number(process.env.API_PORT ?? 3000);
+import {
+  buildApp,
+} from './app.js';
+
+import {
+  createCatalogComposition,
+} from './composition/catalog.js';
+
+import {
+  env,
+} from './config/env.js';
+
+const catalog =
+  createCatalogComposition();
+
+const systemClock =
+  new SystemClock();
+
+const monotonicClock =
+  new PerformanceMonotonicClock();
+
+const logger =
+  new StructuredLogger(
+    'api',
+    systemClock,
+    jsonConsoleSink,
+  );
+
+const app = buildApp({
+  catalog: {
+    createProductHandler:
+      catalog.createProductHandler,
+
+    idGenerator:
+      catalog.idGenerator,
+
+    logger,
+
+    monotonicClock,
+  },
+});
+
+app.addHook(
+  'onClose',
+  async () => {
+    await catalog.close();
+  },
+);
 
 try {
   await app.listen({
-    host,
-    port,
+    host: env.api.host,
+    port: env.api.port,
   });
 } catch (error) {
   app.log.error(error);
+
+  await app.close();
+
   process.exit(1);
 }

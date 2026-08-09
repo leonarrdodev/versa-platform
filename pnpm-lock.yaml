@@ -10,9 +10,18 @@ importers:
 
   apps/api:
     dependencies:
+      '@versa/catalog':
+        specifier: workspace:*
+        version: link:../../modules/catalog
       '@versa/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@versa/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
+      '@versa/shared-kernel':
+        specifier: workspace:*
+        version: link:../../packages/shared-kernel
       fastify:
         specifier: ^5.11.0
         version: 5.11.0
