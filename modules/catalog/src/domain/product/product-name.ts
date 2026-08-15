@@ -1,3 +1,7 @@
+import {
+  InvalidValueError,
+} from '@versa/shared-kernel';
+
 const MAX_PRODUCT_NAME_LENGTH = 120;
 
 export class ProductName {
@@ -5,26 +9,43 @@ export class ProductName {
     public readonly value: string,
   ) {}
 
-  static create(value: string): ProductName {
-    const normalizedValue = value
-      .trim()
-      .replace(/\s+/g, ' ');
+  static create(
+    value: string,
+  ): ProductName {
+    const normalizedValue =
+      value
+        .trim()
+        .replace(/\s+/g, ' ');
 
-    if (normalizedValue.length === 0) {
-      throw new TypeError('Product name cannot be empty');
+    if (
+      normalizedValue.length === 0
+    ) {
+      throw new InvalidValueError(
+        'Product name cannot be empty',
+      );
     }
 
-    if (normalizedValue.length > MAX_PRODUCT_NAME_LENGTH) {
-      throw new TypeError(
+    if (
+      normalizedValue.length >
+      MAX_PRODUCT_NAME_LENGTH
+    ) {
+      throw new InvalidValueError(
         `Product name must have at most ${MAX_PRODUCT_NAME_LENGTH} characters`,
       );
     }
 
-    return new ProductName(normalizedValue);
+    return new ProductName(
+      normalizedValue,
+    );
   }
 
-  equals(other: ProductName): boolean {
-    return this.value === other.value;
+  equals(
+    other: ProductName,
+  ): boolean {
+    return (
+      this.value ===
+      other.value
+    );
   }
 
   toString(): string {

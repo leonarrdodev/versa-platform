@@ -1,6 +1,14 @@
+import type {
+  Logger,
+} from '@versa/observability';
+
 import Fastify, {
   type FastifyInstance,
 } from 'fastify';
+
+import {
+  registerApiErrorHandler,
+} from './errors/register-api-error-handler.js';
 
 import {
   healthRoute,
@@ -17,6 +25,8 @@ import type {
 interface BuildAppOptions {
   logger?: boolean;
 
+  applicationLogger?: Logger;
+
   catalog?:
     ProductsRouteDependencies;
 }
@@ -28,6 +38,11 @@ export function buildApp(
     logger:
       options.logger ?? true,
   });
+
+  registerApiErrorHandler(
+    app,
+    options.applicationLogger,
+  );
 
   app.register(
     healthRoute,

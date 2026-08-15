@@ -121,4 +121,24 @@ export const env = {
       'WORKER_POLL_INTERVAL_MS',
       1_000,
     ),
+
+    retryPolicy: {
+  maxAttempts:
+    getPositiveInteger(
+      'WORKER_MAX_ATTEMPTS',
+      5,
+    ),
+
+  baseDelayMs:
+    getPositiveInteger(
+      'WORKER_RETRY_BASE_DELAY_MS',
+      1_000,
+    ),
+
+  maxDelayMs:
+    getPositiveInteger(
+      'WORKER_RETRY_MAX_DELAY_MS',
+      60_000,
+    ),
+},
 } as const;

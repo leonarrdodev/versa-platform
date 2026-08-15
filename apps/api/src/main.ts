@@ -37,6 +37,9 @@ const logger =
   );
 
 const app = buildApp({
+  applicationLogger:
+  logger,
+
   catalog: {
     createProductHandler:
       catalog.createProductHandler,

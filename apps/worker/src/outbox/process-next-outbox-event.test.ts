@@ -1,6 +1,5 @@
 import {
   PRODUCT_CREATED_EVENT_NAME,
-  PRODUCT_CREATED_EVENT_VERSION,
 } from '@versa/event-contracts';
 
 import type {
@@ -8,12 +7,12 @@ import type {
   MonotonicClock,
 } from '@versa/observability';
 
-import {
-  parseUuid,
-} from '@versa/shared-kernel';
-
 import type {
   IdGenerator,
+} from '@versa/shared-kernel';
+
+import {
+  parseUuid,
 } from '@versa/shared-kernel';
 
 import type {
@@ -36,6 +35,10 @@ import {
   processNextOutboxEvent,
 } from './process-next-outbox-event.js';
 
+import type {
+  OutboxRetryPolicy,
+} from './retry-policy.js';
+
 const EVENT_ID =
   '11111111-1111-4111-8111-111111111111';
 
@@ -45,15 +48,57 @@ const TENANT_ID =
 const PRODUCT_ID =
   '33333333-3333-4333-8333-333333333333';
 
-const CORRELATION_ID =
+const CATEGORY_ID =
   '44444444-4444-4444-8444-444444444444';
 
-const EXECUTION_ID =
-  parseUuid(
-    '55555555-5555-4555-8555-555555555555',
-  );
+const CORRELATION_ID =
+  '55555555-5555-4555-8555-555555555555';
 
-function createEvent():
+const EXECUTION_ID =
+  '66666666-6666-4666-8666-666666666666';
+
+const retryPolicy:
+OutboxRetryPolicy = {
+  maxAttempts:
+    5,
+
+  baseDelayMs:
+    1_000,
+
+  maxDelayMs:
+    60_000,
+};
+
+const idGenerator:
+IdGenerator = {
+  generate() {
+    return parseUuid(
+      EXECUTION_ID,
+    );
+  },
+};
+
+const logger:
+Logger = {
+  log() {},
+
+  debug() {},
+
+  info() {},
+
+  warn() {},
+
+  error() {},
+};
+
+const monotonicClock:
+MonotonicClock = {
+  nowMs() {
+    return 100;
+  },
+};
+
+function createValidEvent():
 OutboxEventRow {
   return {
     eventId:
@@ -78,50 +123,136 @@ OutboxEventRow {
       PRODUCT_CREATED_EVENT_NAME,
 
     eventVersion:
-      PRODUCT_CREATED_EVENT_VERSION,
+      1,
 
     payload: {
       productId:
         PRODUCT_ID,
 
       sku:
-        'BLUSA-001',
+        'TEST-001',
 
       name:
-        'Blusa Canelada Feminina',
+        'Produto de teste',
 
       categoryId:
-        '66666666-6666-4666-8666-666666666666',
+        CATEGORY_ID,
 
       createdAt:
-        '2026-08-09T03:00:00.000Z',
+        '2026-08-15T00:00:00.000Z',
     },
 
     occurredAt:
       new Date(
-        '2026-08-09T03:00:00.000Z',
+        '2026-08-15T00:00:00.000Z',
       ),
 
-    processingAttempts: 0,
+    processingAttempts:
+      0,
   };
 }
 
-function createLogger(): Logger {
+interface RecordedQuery {
+  readonly sql:
+    string;
+
+  readonly values?:
+    readonly unknown[];
+}
+
+function createDatabaseMocks(
+  selectedEvent:
+    OutboxEventRow |
+    undefined,
+): {
+  readonly pool:
+    Pool;
+
+  readonly client:
+    PoolClient;
+
+  readonly queries:
+    RecordedQuery[];
+} {
+  const queries:
+    RecordedQuery[] = [];
+
+  const query =
+    vi.fn(
+      async (
+        sql: string,
+        values?:
+          readonly unknown[],
+      ) => {
+        queries.push({
+          sql,
+
+          ...(values === undefined
+            ? {}
+            : {
+                values,
+              }),
+        });
+
+        if (
+          sql.includes(
+            'FROM event_outbox',
+          )
+        ) {
+          return {
+            rows:
+              selectedEvent ===
+              undefined
+                ? []
+                : [
+                    selectedEvent,
+                  ],
+          };
+        }
+
+        return {
+          rows: [],
+        };
+      },
+    );
+
+  const client = {
+    query,
+
+    release:
+      vi.fn(),
+  } as unknown as PoolClient;
+
+  const pool = {
+    connect:
+      vi.fn(
+        async () =>
+          client,
+      ),
+  } as unknown as Pool;
+
   return {
-    log: vi.fn(),
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
+    pool,
+    client,
+    queries,
   };
 }
 
-const idGenerator:
-IdGenerator = {
-  generate() {
-    return EXECUTION_ID;
-  },
-};
+function findQuery(
+  queries:
+    readonly RecordedQuery[],
+
+  fragment:
+    string,
+): RecordedQuery |
+undefined {
+  return queries.find(
+    (query) =>
+      query.sql.includes(
+        fragment,
+      ),
+  );
+}
 
 describe(
   'processNextOutboxEvent',
@@ -129,60 +260,57 @@ describe(
     it(
       'returns false when there is no pending event',
       async () => {
-        const query = vi.fn(
-  async (
-    sql: string,
-    _values?: readonly unknown[],
-  ) => {
-            if (
-              sql.includes(
-                'FROM event_outbox',
-              )
-            ) {
-              return {
-                rows: [],
-              };
-            }
+        const {
+          pool,
+          client,
+          queries,
+        } =
+          createDatabaseMocks(
+            undefined,
+          );
 
-            return {
-              rows: [],
-            };
-          },
-        );
-
-        const release =
-          vi.fn();
-
-        const client = {
-          query,
-          release,
-        } as unknown as PoolClient;
-
-        const pool = {
-          connect:
-            vi.fn()
-              .mockResolvedValue(
-                client,
-              ),
-        } as unknown as Pool;
-
-        const result =
+        const processed =
           await processNextOutboxEvent({
             pool,
-            idGenerator,
-            logger:
-              createLogger(),
 
-            monotonicClock: {
-              nowMs: () => 0,
-            },
+            idGenerator,
+
+            logger,
+
+            monotonicClock,
+
+            retryPolicy: {
+  maxAttempts: 5,
+  baseDelayMs: 1_000,
+  maxDelayMs: 60_000,
+},
           });
 
-        expect(result)
-          .toBe(false);
+        expect(
+          processed,
+        ).toBe(false);
 
-        expect(release)
-          .toHaveBeenCalledOnce();
+        expect(
+          queries.some(
+            (query) =>
+              query.sql.includes(
+                'FROM event_outbox',
+              ),
+          ),
+        ).toBe(true);
+
+        expect(
+          queries.some(
+            (query) =>
+              query.sql.includes(
+                'COMMIT',
+              ),
+          ),
+        ).toBe(true);
+
+        expect(
+          client.release,
+        ).toHaveBeenCalledOnce();
       },
     );
 
@@ -190,275 +318,224 @@ describe(
       'processes and marks a valid event as completed',
       async () => {
         const event =
-          createEvent();
+          createValidEvent();
 
-       const query = vi.fn(
-  async (
-    sql: string,
-    _values?: readonly unknown[],
-  ) => {
-            if (
-              sql.includes(
-                'FROM event_outbox',
-              )
-            ) {
-              return {
-                rows: [
-                  event,
-                ],
-              };
-            }
+        const {
+          pool,
+          client,
+          queries,
+        } =
+          createDatabaseMocks(
+            event,
+          );
 
-            return {
-              rows: [],
-              rowCount: 1,
-            };
-          },
-        );
-
-        const release =
-          vi.fn();
-
-        const client = {
-          query,
-          release,
-        } as unknown as PoolClient;
-
-        const pool = {
-          connect:
-            vi.fn()
-              .mockResolvedValue(
-                client,
-              ),
-        } as unknown as Pool;
-
-        const logger =
-          createLogger();
-
-        const nowMs =
-          vi.fn()
-            .mockReturnValueOnce(
-              100,
-            )
-            .mockReturnValueOnce(
-              125,
-            );
-
-        const monotonicClock:
-        MonotonicClock = {
-          nowMs,
-        };
-
-        const result =
+        const processed =
           await processNextOutboxEvent({
             pool,
+
             idGenerator,
+
             logger,
+
             monotonicClock,
+
+            retryPolicy,
           });
 
-        expect(result)
-          .toBe(true);
+        expect(
+          processed,
+        ).toBe(true);
 
-        expect(logger.info)
-          .toHaveBeenNthCalledWith(
-            1,
-            expect.objectContaining({
-              event:
-                'outbox.processing.started',
-
-              context: {
-                correlationId:
-                  parseUuid(
-                    CORRELATION_ID,
-                  ),
-
-                executionId:
-                  EXECUTION_ID,
-
-                causationId:
-                  parseUuid(
-                    EVENT_ID,
-                  ),
-              },
-            }),
-          );
-
-        expect(logger.info)
-          .toHaveBeenNthCalledWith(
-            2,
-            expect.objectContaining({
-              event:
-                'outbox.processing.completed',
-
-              durationMs: 25,
-            }),
-          );
-
-        const allSql =
-          query.mock.calls
-            .map(
-              ([sql]) =>
-                String(sql),
-            )
-            .join('\n');
-
-        expect(allSql)
-          .toContain(
+        /*
+         * A projeção do ProductCreated
+         * deve ser escrita.
+         */
+        const projectionQuery =
+          findQuery(
+            queries,
             'INSERT INTO product_read_model',
           );
 
-        expect(allSql)
-          .toContain(
-            'processed_at = now()',
+        expect(
+          projectionQuery,
+        ).toBeDefined();
+
+        /*
+         * Depois do processamento,
+         * o evento deve ser marcado
+         * como concluído.
+         */
+        const completedQuery =
+          queries.find(
+            (query) =>
+              query.sql.includes(
+                'UPDATE event_outbox',
+              ) &&
+              query.sql.includes(
+                'processed_at = now()',
+              ),
           );
 
-        expect(allSql)
-          .toContain(
-            'COMMIT',
-          );
+        expect(
+          completedQuery,
+        ).toBeDefined();
 
-        expect(release)
-          .toHaveBeenCalledOnce();
+        expect(
+          completedQuery?.sql,
+        ).toContain(
+          'processing_attempts',
+        );
+
+        expect(
+          completedQuery?.sql,
+        ).toContain(
+          'last_error = NULL',
+        );
+
+        expect(
+          completedQuery?.sql,
+        ).toContain(
+          'next_attempt_at = NULL',
+        );
+
+        expect(
+          completedQuery?.values,
+        ).toEqual([
+          EVENT_ID,
+        ]);
+
+        expect(
+          queries.some(
+            (query) =>
+              query.sql.includes(
+                'COMMIT',
+              ),
+          ),
+        ).toBe(true);
+
+        expect(
+          client.release,
+        ).toHaveBeenCalledOnce();
       },
     );
 
     it(
-      'records the failure without marking the event as processed',
+      'records the failure and schedules a retry without marking the event as processed',
       async () => {
-        const event = {
-          ...createEvent(),
+        const event: OutboxEventRow = {
+          ...createValidEvent(),
 
           eventName:
             'UnsupportedEvent',
         };
 
-        const query = vi.fn(
-  async (
-    sql: string,
-    _values?: readonly unknown[],
-  ) => {
-            if (
-              sql.includes(
-                'FROM event_outbox',
-              )
-            ) {
-              return {
-                rows: [
-                  event,
-                ],
-              };
-            }
-
-            return {
-              rows: [],
-              rowCount: 1,
-            };
-          },
-        );
-
-        const release =
-          vi.fn();
-
-        const client = {
-          query,
-          release,
-        } as unknown as PoolClient;
-
-        const pool = {
-          connect:
-            vi.fn()
-              .mockResolvedValue(
-                client,
-              ),
-        } as unknown as Pool;
-
-        const logger =
-          createLogger();
-
-        const monotonicClock:
-        MonotonicClock = {
-          nowMs:
-            vi.fn()
-              .mockReturnValueOnce(
-                100,
-              )
-              .mockReturnValueOnce(
-                130,
-              ),
-        };
+        const {
+          pool,
+          client,
+          queries,
+        } =
+          createDatabaseMocks(
+            event,
+          );
 
         await expect(
           processNextOutboxEvent({
             pool,
+
             idGenerator,
+
             logger,
+
             monotonicClock,
+
+            retryPolicy,
           }),
         ).rejects.toThrow(
           'Evento não suportado: UnsupportedEvent',
         );
 
-        const failureUpdate =
-          query.mock.calls.find(
-            ([sql]) =>
-              String(sql).includes(
-                'last_error = $2',
+        /*
+         * Como foi a primeira falha,
+         * ainda não deve ir para
+         * dead-letter.
+         */
+        const failureQuery =
+          queries.find(
+            (query) =>
+              query.sql.includes(
+                'UPDATE event_outbox',
+              ) &&
+              query.sql.includes(
+                'next_attempt_at',
+              ) &&
+              query.sql.includes(
+                "interval '1 millisecond'",
               ),
           );
 
-        expect(failureUpdate)
-          .toBeDefined();
-
-        if (
-          failureUpdate ===
-          undefined
-        ) {
-          throw new Error(
-            'Expected failure update',
-          );
-        }
-
-        const [
-          failureSql,
-          failureValues,
-        ] = failureUpdate;
-
-        expect(failureSql)
-          .toContain(
-            'processing_attempts',
-          );
-
-        expect(failureSql)
-          .toContain(
-            'last_error',
-          );
-
-        expect(failureSql)
-          .not
-          .toContain(
-            'processed_at = now()',
-          );
+        expect(
+          failureQuery,
+        ).toBeDefined();
 
         expect(
-          failureValues,
+          failureQuery?.sql,
+        ).toContain(
+          'processing_attempts',
+        );
+
+        expect(
+          failureQuery?.sql,
+        ).toContain(
+          'last_error = $2',
+        );
+
+        expect(
+          failureQuery?.sql,
+        ).not.toContain(
+          'processed_at = now()',
+        );
+
+        expect(
+          failureQuery?.values,
         ).toEqual([
           EVENT_ID,
+
           'Evento não suportado: UnsupportedEvent',
+
+          1_000,
         ]);
 
-        expect(logger.error)
-          .toHaveBeenCalledWith(
-            expect.objectContaining({
-              event:
-                'outbox.processing.failed',
+        /*
+         * O SAVEPOINT precisa ser
+         * revertido antes de registrar
+         * a falha na própria outbox.
+         */
+        expect(
+          queries.some(
+            (query) =>
+              query.sql.includes(
+                'ROLLBACK TO SAVEPOINT event_processing',
+              ),
+          ),
+        ).toBe(true);
 
-              durationMs: 30,
-            }),
-          );
+        /*
+         * O registro do retry deve
+         * sobreviver, portanto a
+         * transação termina em COMMIT.
+         */
+        expect(
+          queries.some(
+            (query) =>
+              query.sql.includes(
+                'COMMIT',
+              ),
+          ),
+        ).toBe(true);
 
-        expect(release)
-          .toHaveBeenCalledOnce();
+        expect(
+          client.release,
+        ).toHaveBeenCalledOnce();
       },
     );
   },

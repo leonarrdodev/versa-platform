@@ -50,20 +50,37 @@ import {
   processNextOutboxEvent,
 } from '../../../worker/src/outbox/process-next-outbox-event.js';
 
-const logger: Logger = {
+const logger:
+Logger = {
   log() {},
+
   debug() {},
+
   info() {},
+
   warn() {},
+
   error() {},
 };
+
+const retryPolicy = {
+  maxAttempts:
+    5,
+
+  baseDelayMs:
+    1_000,
+
+  maxDelayMs:
+    60_000,
+} as const;
 
 let pool:
   ReturnType<
     typeof createDatabasePool
   >;
 
-let app: FastifyInstance;
+let app:
+  FastifyInstance;
 
 const idGenerator =
   new RandomUuidGenerator();
@@ -73,9 +90,10 @@ const monotonicClock =
 
 beforeAll(
   async () => {
-    pool = createDatabasePool(
-      env.database,
-    );
+    pool =
+      createDatabasePool(
+        env.database,
+      );
 
     const clock =
       new SystemClock();
@@ -88,7 +106,9 @@ beforeAll(
     const createProductHandler =
       new CreateProductHandler({
         clock,
+
         idGenerator,
+
         unitOfWork,
       });
 
@@ -103,13 +123,21 @@ beforeAll(
       );
 
     app = buildApp({
-      logger: false,
+      logger:
+        false,
+
+      applicationLogger:
+        logger,
 
       catalog: {
         createProductHandler,
+
         getProductByIdHandler,
+
         idGenerator,
+
         logger,
+
         monotonicClock,
       },
     });
@@ -121,6 +149,7 @@ beforeAll(
 afterAll(
   async () => {
     await app.close();
+
     await pool.end();
   },
 );
@@ -145,11 +174,12 @@ describe(
 
         try {
           /*
-           * WRITE SIDE
+           * 1. Cria o Product pelo HTTP.
            */
           const postResponse =
             await app.inject({
-              method: 'POST',
+              method:
+                'POST',
 
               url:
                 '/products',
@@ -175,15 +205,24 @@ describe(
 
           const created =
             postResponse.json<{
-              id: string;
-              tenantId: string;
-              sku: string;
-              status: string;
+              id:
+                string;
+
+              tenantId:
+                string;
+
+              sku:
+                string;
+
+              status:
+                string;
             }>();
 
           expect(
             created.tenantId,
-          ).toBe(tenantId);
+          ).toBe(
+            tenantId,
+          );
 
           expect(
             created.sku,
@@ -193,17 +232,24 @@ describe(
 
           expect(
             created.status,
-          ).toBe('draft');
+          ).toBe(
+            'draft',
+          );
 
           /*
-           * O evento deve existir,
-           * mas ainda não ter sido
-           * projetado.
+           * 2. Confirma que o evento
+           * foi persistido na outbox
+           * e ainda não foi processado.
            */
           const eventResult =
             await pool.query<{
-              eventId: string;
+              eventId:
+                string;
+
               processedAt:
+                Date | null;
+
+              nextAttemptAt:
                 Date | null;
             }>(
               `
@@ -212,7 +258,10 @@ describe(
                     AS "eventId",
 
                   processed_at
-                    AS "processedAt"
+                    AS "processedAt",
+
+                  next_attempt_at
+                    AS "nextAttemptAt"
 
                 FROM event_outbox
 
@@ -224,6 +273,7 @@ describe(
               `,
               [
                 tenantId,
+
                 created.id,
               ],
             );
@@ -231,21 +281,27 @@ describe(
           const event =
             eventResult.rows[0];
 
-          expect(event)
-            .toBeDefined();
+          expect(
+            event,
+          ).toBeDefined();
 
           expect(
             event?.processedAt,
           ).toBeNull();
 
+          expect(
+            event?.nextAttemptAt,
+          ).not.toBeNull();
+
           /*
-           * Antes do worker,
-           * o read model ainda
-           * não existe.
+           * 3. Antes do worker,
+           * o read model ainda não
+           * existe.
            */
           const beforeWorker =
             await app.inject({
-              method: 'GET',
+              method:
+                'GET',
 
               url:
                 `/products/${created.id}`,
@@ -261,16 +317,23 @@ describe(
           ).toBe(404);
 
           /*
-           * Forçamos este evento
-           * a ser o mais antigo
-           * da fila.
+           * Torna este evento
+           * inequivocamente elegível
+           * para a próxima execução.
+           *
+           * O worker agora utiliza
+           * next_attempt_at, não apenas
+           * created_at.
            */
           await pool.query(
             `
               UPDATE event_outbox
+              SET
+                next_attempt_at =
+                  '1900-01-01T00:00:00Z',
 
-              SET created_at =
-                '1900-01-01T00:00:00Z'
+                created_at =
+                  '1900-01-01T00:00:00Z'
 
               WHERE event_id = $1
             `,
@@ -280,25 +343,35 @@ describe(
           );
 
           /*
-           * ASYNC SIDE
+           * 4. Executa uma iteração
+           * real do worker.
            */
           const processed =
             await processNextOutboxEvent({
               pool,
+
               idGenerator,
+
               logger,
+
               monotonicClock,
+
+              retryPolicy,
             });
 
-          expect(processed)
-            .toBe(true);
+          expect(
+            processed,
+          ).toBe(true);
 
           /*
-           * READ SIDE
+           * 5. Agora o GET deve ler
+           * a projeção criada pelo
+           * worker.
            */
           const getResponse =
             await app.inject({
-              method: 'GET',
+              method:
+                'GET',
 
               url:
                 `/products/${created.id}`,
@@ -315,45 +388,62 @@ describe(
 
           const projected =
             getResponse.json<{
-              id: string;
-              tenantId: string;
-              sku: string;
-              name: string;
-              categoryId: string;
-              status: string;
-              projectedAt: string;
+              id:
+                string;
+
+              tenantId:
+                string;
+
+              sku:
+                string;
+
+              name:
+                string;
+
+              categoryId:
+                string;
+
+              status:
+                string;
+
+              projectedAt:
+                string;
             }>();
 
-          expect(projected)
-            .toEqual(
-              expect.objectContaining({
-                id:
-                  created.id,
+          expect(
+            projected,
+          ).toEqual(
+            expect.objectContaining({
+              id:
+                created.id,
 
-                tenantId,
+              tenantId,
 
-                sku:
-                  expectedSku,
+              sku:
+                expectedSku,
 
-                name:
-                  'Produto E2E',
+              name:
+                'Produto E2E',
 
-                categoryId,
+              categoryId,
 
-                status:
-                  'draft',
-              }),
-            );
+              status:
+                'draft',
+            }),
+          );
 
           expect(
             projected.projectedAt,
           ).toEqual(
-            expect.any(String),
+            expect.any(
+              String,
+            ),
           );
 
           /*
-           * Confirma que o evento
-           * foi realmente concluído.
+           * 6. O evento deve estar
+           * processado e não deve mais
+           * possuir próximo retry.
            */
           const processedEvent =
             await pool.query<{
@@ -362,6 +452,12 @@ describe(
 
               processingAttempts:
                 number;
+
+              nextAttemptAt:
+                Date | null;
+
+              deadLetteredAt:
+                Date | null;
             }>(
               `
                 SELECT
@@ -369,7 +465,13 @@ describe(
                     AS "processedAt",
 
                   processing_attempts
-                    AS "processingAttempts"
+                    AS "processingAttempts",
+
+                  next_attempt_at
+                    AS "nextAttemptAt",
+
+                  dead_lettered_at
+                    AS "deadLetteredAt"
 
                 FROM event_outbox
 
@@ -392,14 +494,27 @@ describe(
               ?.processingAttempts,
           ).toBe(1);
 
+          expect(
+            processedEvent
+              .rows[0]
+              ?.nextAttemptAt,
+          ).toBeNull();
+
+          expect(
+            processedEvent
+              .rows[0]
+              ?.deadLetteredAt,
+          ).toBeNull();
+
           /*
-           * MULTI-TENANCY:
-           * outro tenant não pode
-           * enxergar o produto.
+           * 7. Mesmo Product não
+           * pode ser lido por outro
+           * tenant.
            */
           const wrongTenantResponse =
             await app.inject({
-              method: 'GET',
+              method:
+                'GET',
 
               url:
                 `/products/${created.id}`,
@@ -411,20 +526,13 @@ describe(
             });
 
           expect(
-            wrongTenantResponse
-              .statusCode,
+            wrongTenantResponse.statusCode,
           ).toBe(404);
         } finally {
-          /*
-           * Tenant aleatório exclusivo
-           * deste teste torna a limpeza
-           * segura.
-           */
           await pool.query(
             `
               DELETE
               FROM product_read_model
-
               WHERE tenant_id = $1
             `,
             [
@@ -436,7 +544,6 @@ describe(
             `
               DELETE
               FROM event_outbox
-
               WHERE tenant_id = $1
             `,
             [
@@ -448,7 +555,6 @@ describe(
             `
               DELETE
               FROM products
-
               WHERE tenant_id = $1
             `,
             [

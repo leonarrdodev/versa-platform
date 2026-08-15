@@ -22,3 +22,7 @@ export type {
 export {
   RandomUuidGenerator,
 } from './id-generation/random-uuid-generator.js';
+
+export {
+  InvalidValueError,
+} from './errors/invalid-value-error.js';

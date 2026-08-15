@@ -18,7 +18,7 @@ import {
 
 import type {
   Pool,
-  PoolClient
+  PoolClient,
 } from 'pg';
 
 import type {
@@ -29,14 +29,29 @@ import {
   projectProductCreated,
 } from './project-product-created.js';
 
+import {
+  decideOutboxRetry,
+} from './retry-policy.js';
+
+import type {
+  OutboxRetryPolicy,
+} from './retry-policy.js';
+
 interface Dependencies {
-  readonly pool: Pool;
+  readonly pool:
+    Pool;
+
   readonly idGenerator:
     IdGenerator;
+
   readonly logger:
     Logger;
+
   readonly monotonicClock:
     MonotonicClock;
+
+  readonly retryPolicy:
+    OutboxRetryPolicy;
 }
 
 function createWorkerContext(
@@ -98,7 +113,9 @@ export async function processNextOutboxEvent(
   let transactionOpen = false;
 
   try {
-    await client.query('BEGIN');
+    await client.query(
+      'BEGIN',
+    );
 
     transactionOpen = true;
 
@@ -140,9 +157,13 @@ export async function processNextOutboxEvent(
 
           FROM event_outbox
 
-          WHERE processed_at IS NULL
+          WHERE
+            processed_at IS NULL
+            AND dead_lettered_at IS NULL
+            AND next_attempt_at <= now()
 
           ORDER BY
+            next_attempt_at,
             created_at,
             event_id
 
@@ -155,7 +176,9 @@ export async function processNextOutboxEvent(
     const event =
       result.rows[0];
 
-    if (event === undefined) {
+    if (
+      event === undefined
+    ) {
       await client.query(
         'COMMIT',
       );
@@ -216,9 +239,14 @@ export async function processNextOutboxEvent(
           UPDATE event_outbox
           SET
             processed_at = now(),
+
             processing_attempts =
               processing_attempts + 1,
-            last_error = NULL
+
+            last_error = NULL,
+
+            next_attempt_at = NULL
+
           WHERE event_id = $1
         `,
         [
@@ -271,24 +299,68 @@ export async function processNextOutboxEvent(
         'ROLLBACK TO SAVEPOINT event_processing',
       );
 
-      await client.query(
-        `
-          UPDATE event_outbox
-          SET
-            processing_attempts =
-              processing_attempts + 1,
+      const retryDecision =
+        decideOutboxRetry(
+          event.processingAttempts,
+          dependencies.retryPolicy,
+        );
 
-            last_error = $2
+      if (
+        retryDecision.deadLetter
+      ) {
+        await client.query(
+          `
+            UPDATE event_outbox
+            SET
+              processing_attempts =
+                processing_attempts + 1,
 
-          WHERE event_id = $1
-        `,
-        [
-          event.eventId,
-          normalizeErrorMessage(
-            error,
-          ),
-        ],
-      );
+              last_error = $2,
+
+              next_attempt_at = NULL,
+
+              dead_lettered_at = now()
+
+            WHERE event_id = $1
+          `,
+          [
+            event.eventId,
+
+            normalizeErrorMessage(
+              error,
+            ),
+          ],
+        );
+      } else {
+        await client.query(
+          `
+            UPDATE event_outbox
+            SET
+              processing_attempts =
+                processing_attempts + 1,
+
+              last_error = $2,
+
+              next_attempt_at =
+                now() +
+                (
+                  $3::integer *
+                  interval '1 millisecond'
+                )
+
+            WHERE event_id = $1
+          `,
+          [
+            event.eventId,
+
+            normalizeErrorMessage(
+              error,
+            ),
+
+            retryDecision.nextDelayMs,
+          ],
+        );
+      }
 
       await client.query(
         'RELEASE SAVEPOINT event_processing',
@@ -308,10 +380,14 @@ export async function processNextOutboxEvent(
 
       dependencies.logger.error({
         message:
-          'Outbox event processing failed',
+          retryDecision.deadLetter
+            ? 'Outbox event dead-lettered'
+            : 'Outbox event retry scheduled',
 
         event:
-          'outbox.processing.failed',
+          retryDecision.deadLetter
+            ? 'outbox.processing.dead_lettered'
+            : 'outbox.processing.retry_scheduled',
 
         context,
 
@@ -328,13 +404,24 @@ export async function processNextOutboxEvent(
 
           aggregateId:
             event.aggregateId,
+
+          attempt:
+            retryDecision.attempt,
+
+          deadLetter:
+            retryDecision.deadLetter,
+
+          nextDelayMs:
+            retryDecision.nextDelayMs,
         },
       });
 
       throw error;
     }
   } catch (error) {
-    if (transactionOpen) {
+    if (
+      transactionOpen
+    ) {
       await client.query(
         'ROLLBACK',
       );

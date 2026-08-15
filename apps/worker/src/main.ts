@@ -92,9 +92,15 @@ Promise<void> {
         const processed =
           await processNextOutboxEvent({
             pool,
+
             idGenerator,
+
             logger,
+
             monotonicClock,
+
+            retryPolicy:
+              env.retryPolicy,
           });
 
         if (!processed) {

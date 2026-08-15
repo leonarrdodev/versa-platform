@@ -110,3 +110,7 @@ export type {
 export {
   PostgresProductReadRepository,
 } from './infrastructure/postgres/postgres-product-read-repository.js';
+
+export {
+  ProductSkuAlreadyExistsError,
+} from './domain/product/product-sku-already-exists-error.js';

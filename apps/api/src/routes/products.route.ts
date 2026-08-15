@@ -294,8 +294,11 @@ export function createProductsRoute(
           return reply
             .code(404)
             .send({
-              error:
-                'PRODUCT_NOT_FOUND',
+             code:
+    'PRODUCT_NOT_FOUND',
+
+  message:
+    'Produto não encontrado.',
             });
         }
 
