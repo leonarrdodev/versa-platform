@@ -13,6 +13,7 @@
   "scripts": {
     "dev:api": "pnpm --filter @versa/api dev",
     "dev:worker": "pnpm --filter @versa/worker dev",
+    "dev:web": "pnpm --filter @versa/web dev",
     "build": "pnpm --recursive run build",
     "typecheck": "pnpm --filter './packages/**' build && pnpm --filter './modules/**' build && pnpm --recursive run typecheck",
     "test": "pnpm --recursive run test",
