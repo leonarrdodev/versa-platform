@@ -5,6 +5,7 @@ import {
 import {
   CreateProductHandler,
   GetProductByIdHandler,
+  GetProductsHandler,
   PostgresCatalogUnitOfWork,
   PostgresProductReadRepository,
 } from '@versa/catalog';
@@ -46,11 +47,16 @@ import {
   env,
 } from '../../src/config/env.js';
 
-const logger: Logger = {
+const logger:
+Logger = {
   log() {},
+
   debug() {},
+
   info() {},
+
   warn() {},
+
   error() {},
 };
 
@@ -59,7 +65,8 @@ let pool:
     typeof createDatabasePool
   >;
 
-let app: FastifyInstance;
+let app:
+  FastifyInstance;
 
 const idGenerator =
   new RandomUuidGenerator();
@@ -69,9 +76,13 @@ const monotonicClock =
 
 beforeAll(
   async () => {
-    pool = createDatabasePool(
-      env.database,
-    );
+    pool =
+      createDatabasePool(
+        env.database,
+      );
+
+    const clock =
+      new SystemClock();
 
     const unitOfWork =
       new PostgresCatalogUnitOfWork(
@@ -80,35 +91,46 @@ beforeAll(
 
     const createProductHandler =
       new CreateProductHandler({
-        clock:
-          new SystemClock(),
+        clock,
 
         idGenerator,
 
         unitOfWork,
       });
 
-    const readRepository =
+    const productReadRepository =
       new PostgresProductReadRepository(
         pool,
       );
 
     const getProductByIdHandler =
       new GetProductByIdHandler(
-        readRepository,
+        productReadRepository,
+      );
+
+    const getProductsHandler =
+      new GetProductsHandler(
+        productReadRepository,
       );
 
     app = buildApp({
-      logger: false,
+      logger:
+        false,
 
       applicationLogger:
         logger,
 
       catalog: {
         createProductHandler,
+
         getProductByIdHandler,
+
+        getProductsHandler,
+
         idGenerator,
+
         logger,
+
         monotonicClock,
       },
     });
@@ -120,6 +142,7 @@ beforeAll(
 afterAll(
   async () => {
     await app.close();
+
     await pool.end();
   },
 );
@@ -169,7 +192,8 @@ describe(
       async () => {
         const response =
           await app.inject({
-            method: 'POST',
+            method:
+              'POST',
 
             url:
               '/products',
@@ -215,7 +239,8 @@ describe(
 
         const response =
           await app.inject({
-            method: 'POST',
+            method:
+              'POST',
 
             url:
               '/products',
@@ -258,7 +283,8 @@ describe(
       async () => {
         const response =
           await app.inject({
-            method: 'GET',
+            method:
+              'GET',
 
             url:
               `/products/${randomUUID()}`,
@@ -302,9 +328,14 @@ describe(
             .toUpperCase();
 
         try {
+          /*
+           * Primeiro cadastro no
+           * Tenant A.
+           */
           const first =
             await app.inject({
-              method: 'POST',
+              method:
+                'POST',
 
               url:
                 '/products',
@@ -328,9 +359,14 @@ describe(
             first.statusCode,
           ).toBe(201);
 
+          /*
+           * Mesmo SKU no mesmo tenant
+           * deve resultar em conflito.
+           */
           const duplicate =
             await app.inject({
-              method: 'POST',
+              method:
+                'POST',
 
               url:
                 '/products',
@@ -365,12 +401,13 @@ describe(
           });
 
           /*
-           * Mesmo SKU em outro tenant
-           * deve ser permitido.
+           * O mesmo SKU em outro tenant
+           * deve continuar permitido.
            */
           const otherTenant =
             await app.inject({
-              method: 'POST',
+              method:
+                'POST',
 
               url:
                 '/products',
@@ -402,6 +439,39 @@ describe(
             tenantB,
           );
         }
+      },
+    );
+
+    it(
+      'returns 400 for invalid product list pagination',
+      async () => {
+        const response =
+          await app.inject({
+            method:
+              'GET',
+
+            url:
+              '/products?limit=101&offset=0',
+
+            headers: {
+              'x-tenant-id':
+                randomUUID(),
+            },
+          });
+
+        expect(
+          response.statusCode,
+        ).toBe(400);
+
+        expect(
+          response.json(),
+        ).toEqual({
+          code:
+            'INVALID_INPUT',
+
+          message:
+            'Os dados enviados são inválidos.',
+        });
       },
     );
   },

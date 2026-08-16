@@ -26,9 +26,30 @@ export interface ProductReadModel {
   readonly projectedAt: string;
 }
 
+export interface FindProductsOptions {
+  readonly limit: number;
+  readonly offset: number;
+}
+
+export interface ProductReadPage {
+  readonly items:
+    readonly ProductReadModel[];
+
+  readonly hasMore:
+    boolean;
+
+  readonly nextOffset:
+    number | null;
+}
+
 export interface ProductReadRepository {
   findById(
     tenantId: TenantId,
     productId: ProductId,
   ): Promise<ProductReadModel | null>;
+
+  findMany(
+    tenantId: TenantId,
+    options: FindProductsOptions,
+  ): Promise<ProductReadPage>;
 }

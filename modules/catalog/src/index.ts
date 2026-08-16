@@ -114,3 +114,16 @@ export {
 export {
   ProductSkuAlreadyExistsError,
 } from './domain/product/product-sku-already-exists-error.js';
+
+export {
+  GetProductsHandler,
+} from './application/get-products/get-products-handler.js';
+
+export type {
+  GetProductsQuery,
+} from './application/get-products/get-products-handler.js';
+
+export type {
+  FindProductsOptions,
+  ProductReadPage,
+} from './application/ports/product-read-repository.js';

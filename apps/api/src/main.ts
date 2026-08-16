@@ -41,18 +41,21 @@ const app = buildApp({
   logger,
 
   catalog: {
-    createProductHandler:
-      catalog.createProductHandler,
+     createProductHandler:
+    catalog.createProductHandler,
 
-    idGenerator:
-      catalog.idGenerator,
+  getProductByIdHandler:
+    catalog.getProductByIdHandler,
 
-    logger,
+  getProductsHandler:
+    catalog.getProductsHandler,
 
-    monotonicClock,
+  idGenerator:
+    catalog.idGenerator,
 
-    getProductByIdHandler:
-  catalog.getProductByIdHandler,
+  logger,
+
+  monotonicClock,
   },
 });
 

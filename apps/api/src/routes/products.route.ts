@@ -1,6 +1,7 @@
 import type {
   CreateProductHandler,
   GetProductByIdHandler,
+  GetProductsHandler,
 } from '@versa/catalog';
 
 import {
@@ -20,19 +21,44 @@ import type {
   FastifyPluginAsync,
 } from 'fastify';
 
-interface CreateProductBody {
-  readonly sku: string;
-  readonly name: string;
-  readonly categoryId: string;
+interface ProductHeaders {
+  readonly 'x-tenant-id':
+    string;
 }
 
-interface CreateProductHeaders {
-  readonly 'x-tenant-id': string;
+interface CreateProductBody {
+  readonly sku:
+    string;
+
+  readonly name:
+    string;
+
+  readonly categoryId:
+    string;
+}
+
+interface GetProductParams {
+  readonly id:
+    string;
+}
+
+interface GetProductsQuerystring {
+  readonly limit?:
+    number;
+
+  readonly offset?:
+    number;
 }
 
 export interface ProductsRouteDependencies {
   readonly createProductHandler:
     CreateProductHandler;
+
+  readonly getProductByIdHandler:
+    GetProductByIdHandler;
+
+  readonly getProductsHandler:
+    GetProductsHandler;
 
   readonly idGenerator:
     IdGenerator;
@@ -42,13 +68,6 @@ export interface ProductsRouteDependencies {
 
   readonly monotonicClock:
     MonotonicClock;
-
-    readonly getProductByIdHandler:
-  GetProductByIdHandler;
-}
-
-interface GetProductParams {
-  readonly id: string;
 }
 
 export function createProductsRoute(
@@ -59,14 +78,18 @@ export function createProductsRoute(
     app,
   ): Promise<void> {
     app.post<{
-      Body: CreateProductBody;
-      Headers: CreateProductHeaders;
+      Body:
+        CreateProductBody;
+
+      Headers:
+        ProductHeaders;
     }>(
       '/products',
       {
         schema: {
           headers: {
-            type: 'object',
+            type:
+              'object',
 
             required: [
               'x-tenant-id',
@@ -74,13 +97,15 @@ export function createProductsRoute(
 
             properties: {
               'x-tenant-id': {
-                type: 'string',
+                type:
+                  'string',
               },
             },
           },
 
           body: {
-            type: 'object',
+            type:
+              'object',
 
             additionalProperties:
               false,
@@ -93,15 +118,18 @@ export function createProductsRoute(
 
             properties: {
               sku: {
-                type: 'string',
+                type:
+                  'string',
               },
 
               name: {
-                type: 'string',
+                type:
+                  'string',
               },
 
               categoryId: {
-                type: 'string',
+                type:
+                  'string',
               },
             },
           },
@@ -164,6 +192,7 @@ export function createProductsRoute(
                     request.body
                       .categoryId,
                 },
+
                 executionContext,
               );
 
@@ -236,15 +265,24 @@ export function createProductsRoute(
         }
       },
     );
-   app.get<{
-      Params: GetProductParams;
-      Headers: CreateProductHeaders;
+
+    /*
+     * Lista paginada dos produtos
+     * já disponíveis no read model.
+     */
+    app.get<{
+      Headers:
+        ProductHeaders;
+
+      Querystring:
+        GetProductsQuerystring;
     }>(
-      '/products/:id',
+      '/products',
       {
         schema: {
           headers: {
-            type: 'object',
+            type:
+              'object',
 
             required: [
               'x-tenant-id',
@@ -252,13 +290,108 @@ export function createProductsRoute(
 
             properties: {
               'x-tenant-id': {
-                type: 'string',
+                type:
+                  'string',
+              },
+            },
+          },
+
+          querystring: {
+            type:
+              'object',
+
+            additionalProperties:
+              false,
+
+            properties: {
+              limit: {
+                type:
+                  'integer',
+
+                minimum:
+                  1,
+
+                maximum:
+                  100,
+              },
+
+              offset: {
+                type:
+                  'integer',
+
+                minimum:
+                  0,
+              },
+            },
+          },
+        },
+      },
+
+      async (
+        request,
+        reply,
+      ) => {
+        const result =
+          await dependencies
+            .getProductsHandler
+            .execute({
+              tenantId:
+                request.headers[
+                  'x-tenant-id'
+                ],
+
+              ...(request.query.limit ===
+              undefined
+                ? {}
+                : {
+                    limit:
+                      request.query.limit,
+                  }),
+
+              ...(request.query.offset ===
+              undefined
+                ? {}
+                : {
+                    offset:
+                      request.query.offset,
+                  }),
+            });
+
+        return reply
+          .code(200)
+          .send(result);
+      },
+    );
+
+    app.get<{
+      Params:
+        GetProductParams;
+
+      Headers:
+        ProductHeaders;
+    }>(
+      '/products/:id',
+      {
+        schema: {
+          headers: {
+            type:
+              'object',
+
+            required: [
+              'x-tenant-id',
+            ],
+
+            properties: {
+              'x-tenant-id': {
+                type:
+                  'string',
               },
             },
           },
 
           params: {
-            type: 'object',
+            type:
+              'object',
 
             required: [
               'id',
@@ -266,7 +399,8 @@ export function createProductsRoute(
 
             properties: {
               id: {
-                type: 'string',
+                type:
+                  'string',
               },
             },
           },
@@ -290,15 +424,17 @@ export function createProductsRoute(
                 request.params.id,
             });
 
-        if (product === null) {
+        if (
+          product === null
+        ) {
           return reply
             .code(404)
             .send({
-             code:
-    'PRODUCT_NOT_FOUND',
+              code:
+                'PRODUCT_NOT_FOUND',
 
-  message:
-    'Produto não encontrado.',
+              message:
+                'Produto não encontrado.',
             });
         }
 

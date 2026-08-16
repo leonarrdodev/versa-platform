@@ -15,7 +15,9 @@ import {
 } from '../../domain/product/product-status.js';
 
 import type {
+  FindProductsOptions,
   ProductReadModel,
+  ProductReadPage,
   ProductReadRepository,
 } from '../../application/ports/product-read-repository.js';
 
@@ -34,10 +36,57 @@ interface ProductReadRow {
   readonly projectedAt: Date;
 }
 
+function mapProductReadRow(
+  row: ProductReadRow,
+): ProductReadModel {
+  if (
+    !isProductStatus(
+      row.status,
+    )
+  ) {
+    throw new Error(
+      `Status inválido no read model: ${row.status}`,
+    );
+  }
+
+  return {
+    id:
+      row.id,
+
+    tenantId:
+      row.tenantId,
+
+    sku:
+      row.sku,
+
+    name:
+      row.name,
+
+    categoryId:
+      row.categoryId,
+
+    status:
+      row.status,
+
+    createdAt:
+      row.createdAt
+        .toISOString(),
+
+    updatedAt:
+      row.updatedAt
+        .toISOString(),
+
+    projectedAt:
+      row.projectedAt
+        .toISOString(),
+  };
+}
+
 export class PostgresProductReadRepository
 implements ProductReadRepository {
   constructor(
-    private readonly pool: Pool,
+    private readonly pool:
+      Pool,
   ) {}
 
   async findById(
@@ -87,40 +136,102 @@ implements ProductReadRepository {
     const row =
       result.rows[0];
 
-    if (row === undefined) {
+    if (
+      row === undefined
+    ) {
       return null;
     }
 
-    if (!isProductStatus(row.status)) {
-      throw new Error(
-        `Status inválido no read model: ${row.status}`,
+    return mapProductReadRow(
+      row,
+    );
+  }
+
+  async findMany(
+    tenantId: TenantId,
+    options: FindProductsOptions,
+  ): Promise<ProductReadPage> {
+    /*
+     * Buscamos limit + 1.
+     *
+     * O item extra permite descobrir
+     * se existe outra página sem fazer
+     * um COUNT(*) separado.
+     */
+    const databaseLimit =
+      options.limit + 1;
+
+    const result =
+      await this.pool.query<ProductReadRow>(
+        `
+          SELECT
+            id,
+
+            tenant_id
+              AS "tenantId",
+
+            sku,
+            name,
+
+            category_id
+              AS "categoryId",
+
+            status,
+
+            created_at
+              AS "createdAt",
+
+            updated_at
+              AS "updatedAt",
+
+            projected_at
+              AS "projectedAt"
+
+          FROM product_read_model
+
+          WHERE tenant_id = $1
+
+          ORDER BY
+            created_at DESC,
+            id DESC
+
+          LIMIT $2
+          OFFSET $3
+        `,
+        [
+          tenantId,
+          databaseLimit,
+          options.offset,
+        ],
       );
-    }
+
+    const hasMore =
+      result.rows.length >
+      options.limit;
+
+    const visibleRows =
+      hasMore
+        ? result.rows.slice(
+            0,
+            options.limit,
+          )
+        : result.rows;
+
+    const items =
+      visibleRows.map(
+        mapProductReadRow,
+      );
 
     return {
-      id: row.id,
-      tenantId:
-        row.tenantId,
+      items,
 
-      sku: row.sku,
-      name: row.name,
+      hasMore,
 
-      categoryId:
-        row.categoryId,
-
-      status: row.status,
-
-      createdAt:
-        row.createdAt
-          .toISOString(),
-
-      updatedAt:
-        row.updatedAt
-          .toISOString(),
-
-      projectedAt:
-        row.projectedAt
-          .toISOString(),
+      nextOffset:
+        hasMore
+          ? options.offset +
+            items.length
+          : null,
     };
   }
 }

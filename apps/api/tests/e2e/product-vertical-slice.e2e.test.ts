@@ -5,6 +5,7 @@ import {
 import {
   CreateProductHandler,
   GetProductByIdHandler,
+  GetProductsHandler,
   PostgresCatalogUnitOfWork,
   PostgresProductReadRepository,
 } from '@versa/catalog';
@@ -122,6 +123,11 @@ beforeAll(
         productReadRepository,
       );
 
+    const getProductsHandler =
+      new GetProductsHandler(
+        productReadRepository,
+      );
+
     app = buildApp({
       logger:
         false,
@@ -133,6 +139,8 @@ beforeAll(
         createProductHandler,
 
         getProductByIdHandler,
+
+        getProductsHandler,
 
         idGenerator,
 
@@ -158,7 +166,7 @@ describe(
   'Product vertical slice',
   () => {
     it(
-      'creates, projects and reads a product',
+      'creates, projects, reads and lists a product',
       async () => {
         const tenantId =
           randomUUID();
@@ -174,7 +182,7 @@ describe(
 
         try {
           /*
-           * 1. Cria o Product pelo HTTP.
+           * 1. Cria o produto pela API.
            */
           const postResponse =
             await app.inject({
@@ -238,8 +246,7 @@ describe(
 
           /*
            * 2. Confirma que o evento
-           * foi persistido na outbox
-           * e ainda não foi processado.
+           * foi escrito na outbox.
            */
           const eventResult =
             await pool.query<{
@@ -295,8 +302,8 @@ describe(
 
           /*
            * 3. Antes do worker,
-           * o read model ainda não
-           * existe.
+           * a projection ainda
+           * não existe.
            */
           const beforeWorker =
             await app.inject({
@@ -317,13 +324,8 @@ describe(
           ).toBe(404);
 
           /*
-           * Torna este evento
-           * inequivocamente elegível
-           * para a próxima execução.
-           *
-           * O worker agora utiliza
-           * next_attempt_at, não apenas
-           * created_at.
+           * Torna o evento deste teste
+           * inequivocamente elegível.
            */
           await pool.query(
             `
@@ -364,9 +366,9 @@ describe(
           ).toBe(true);
 
           /*
-           * 5. Agora o GET deve ler
-           * a projeção criada pelo
-           * worker.
+           * 5. Agora o produto deve
+           * estar disponível pelo GET
+           * individual.
            */
           const getResponse =
             await app.inject({
@@ -441,9 +443,98 @@ describe(
           );
 
           /*
-           * 6. O evento deve estar
-           * processado e não deve mais
-           * possuir próximo retry.
+           * 6. A listagem também deve
+           * retornar o produto.
+           */
+          const listResponse =
+            await app.inject({
+              method:
+                'GET',
+
+              url:
+                '/products?limit=20&offset=0',
+
+              headers: {
+                'x-tenant-id':
+                  tenantId,
+              },
+            });
+
+          expect(
+            listResponse.statusCode,
+          ).toBe(200);
+
+          const list =
+            listResponse.json<{
+              items:
+                Array<{
+                  id:
+                    string;
+
+                  tenantId:
+                    string;
+
+                  sku:
+                    string;
+
+                  name:
+                    string;
+
+                  status:
+                    string;
+                }>;
+
+              hasMore:
+                boolean;
+
+              nextOffset:
+                number | null;
+            }>();
+
+          expect(
+            list.items,
+          ).toEqual(
+            expect.arrayContaining([
+              expect.objectContaining({
+                id:
+                  created.id,
+
+                tenantId,
+
+                sku:
+                  expectedSku,
+
+                name:
+                  'Produto E2E',
+
+                status:
+                  'draft',
+              }),
+            ]),
+          );
+
+          /*
+           * Como este tenant foi criado
+           * especificamente para este
+           * teste, só deve existir um
+           * produto nele.
+           */
+          expect(
+            list.items,
+          ).toHaveLength(1);
+
+          expect(
+            list.hasMore,
+          ).toBe(false);
+
+          expect(
+            list.nextOffset,
+          ).toBeNull();
+
+          /*
+           * 7. O evento deve estar
+           * processado e fora da fila
+           * de retry.
            */
           const processedEvent =
             await pool.query<{
@@ -507,9 +598,9 @@ describe(
           ).toBeNull();
 
           /*
-           * 7. Mesmo Product não
-           * pode ser lido por outro
-           * tenant.
+           * 8. Isolamento multi-tenant:
+           * outro tenant não pode ler
+           * este produto.
            */
           const wrongTenantResponse =
             await app.inject({

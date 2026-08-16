@@ -1,8 +1,9 @@
 import {
   CreateProductHandler,
-  PostgresCatalogUnitOfWork,
   GetProductByIdHandler,
-PostgresProductReadRepository,
+  GetProductsHandler,
+  PostgresCatalogUnitOfWork,
+  PostgresProductReadRepository,
 } from '@versa/catalog';
 
 import {
@@ -26,20 +27,24 @@ export interface CatalogComposition {
   readonly createProductHandler:
     CreateProductHandler;
 
+  readonly getProductByIdHandler:
+    GetProductByIdHandler;
+
+  readonly getProductsHandler:
+    GetProductsHandler;
+
   readonly idGenerator:
     IdGenerator;
-
-    readonly getProductByIdHandler:
-  GetProductByIdHandler;
 
   close(): Promise<void>;
 }
 
 export function createCatalogComposition():
 CatalogComposition {
-  const pool = createDatabasePool(
-    env.database,
-  );
+  const pool =
+    createDatabasePool(
+      env.database,
+    );
 
   const clock =
     new SystemClock();
@@ -52,15 +57,20 @@ CatalogComposition {
       pool,
     );
 
-    const productReadRepository =
-  new PostgresProductReadRepository(
-    pool,
-  );
+  const productReadRepository =
+    new PostgresProductReadRepository(
+      pool,
+    );
 
-const getProductByIdHandler =
-  new GetProductByIdHandler(
-    productReadRepository,
-  );
+  const getProductByIdHandler =
+    new GetProductByIdHandler(
+      productReadRepository,
+    );
+
+  const getProductsHandler =
+    new GetProductsHandler(
+      productReadRepository,
+    );
 
   const createProductHandler =
     new CreateProductHandler({
@@ -70,12 +80,14 @@ const getProductByIdHandler =
     });
 
   return {
-  createProductHandler,
-  getProductByIdHandler,
-  idGenerator,
+    createProductHandler,
+    getProductByIdHandler,
+    getProductsHandler,
+    idGenerator,
 
-  async close(): Promise<void> {
-    await pool.end();
-  },
-};
+    async close():
+    Promise<void> {
+      await pool.end();
+    },
+  };
 }
