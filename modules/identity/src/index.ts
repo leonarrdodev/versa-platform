@@ -237,3 +237,41 @@ export type {
   SignInMembershipResult,
   SignInResult,
 } from './application/authentication/sign-in-result.js';
+
+export type {
+  SessionAuthenticationRepository,
+} from './application/ports/session-authentication-repository.js';
+
+export type {
+  SessionAuthentication,
+} from './application/session/session-authentication.js';
+
+export {
+  InvalidSessionError,
+} from './application/session/invalid-session-error.js';
+
+export {
+  ResolveSessionHandler,
+  type ResolveSessionHandlerDependencies,
+} from './application/session/resolve-session-handler.js';
+
+export type {
+  ResolveSessionResult,
+} from './application/session/resolve-session-result.js';
+
+export {
+  PostgresSessionAuthenticationRepository,
+} from './infrastructure/postgres/postgres-session-authentication-repository.js';
+
+export type {
+  SessionRevocationRepository,
+} from './application/ports/session-revocation-repository.js';
+
+export {
+  RevokeSessionHandler,
+  type RevokeSessionHandlerDependencies,
+} from './application/session/revoke-session-handler.js';
+
+export {
+  PostgresSessionRevocationRepository,
+} from './infrastructure/postgres/postgres-session-revocation-repository.js';
