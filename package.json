@@ -11,6 +11,7 @@
     "pnpm": ">=11 <12"
   },
   "scripts": {
+    "dev": "pnpm --parallel --stream --filter @versa/api --filter @versa/worker --filter @versa/web run dev",
     "dev:api": "pnpm --filter @versa/api dev",
     "dev:worker": "pnpm --filter @versa/worker dev",
     "dev:web": "pnpm --filter @versa/web dev",
