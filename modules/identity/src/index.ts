@@ -175,3 +175,65 @@ export type {
   LoginMembershipResult,
   LoginResult,
 } from './application/authentication/login-result.js';
+
+export {
+  parseSessionId,
+  type SessionId,
+} from './domain/identifiers/session-id.js';
+
+export {
+  SessionTokenHash,
+} from './domain/session/session-token-hash.js';
+
+export {
+  Session,
+  type CreateSessionInput,
+  type SessionCreationDependencies,
+} from './domain/session/session.js';
+
+export type {
+  SessionRepository,
+} from './application/ports/session-repository.js';
+
+export type {
+  SessionTokenGenerator,
+} from './application/ports/session-token-generator.js';
+
+export type {
+  SessionTokenHasher,
+} from './application/ports/session-token-hasher.js';
+
+export type {
+  CreateSessionCommand,
+} from './application/session/create-session-command.js';
+
+export {
+  CreateSessionHandler,
+  type CreateSessionHandlerDependencies,
+} from './application/session/create-session-handler.js';
+
+export type {
+  CreateSessionResult,
+} from './application/session/create-session-result.js';
+
+export {
+  CryptoSessionTokenGenerator,
+} from './infrastructure/security/crypto-session-token-generator.js';
+
+export {
+  Sha256SessionTokenHasher,
+} from './infrastructure/security/sha256-session-token-hasher.js';
+
+export {
+  PostgresSessionRepository,
+} from './infrastructure/postgres/postgres-session-repository.js';
+
+export {
+  SignInHandler,
+  type SignInHandlerDependencies,
+} from './application/authentication/sign-in-handler.js';
+
+export type {
+  SignInMembershipResult,
+  SignInResult,
+} from './application/authentication/sign-in-result.js';
