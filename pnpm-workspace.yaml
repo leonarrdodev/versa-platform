@@ -3,4 +3,5 @@ packages:
   - "modules/*"
   - "packages/*"
 allowBuilds:
+  argon2: false
   esbuild: true

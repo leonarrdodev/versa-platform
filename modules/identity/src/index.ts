@@ -1,0 +1,159 @@
+export {
+  parseUserId,
+  type UserId,
+} from './domain/identifiers/user-id.js';
+
+export {
+  parseTenantId,
+  type TenantId,
+} from './domain/identifiers/tenant-id.js';
+
+export {
+  Email,
+} from './domain/user/email.js';
+
+export {
+  DisplayName,
+} from './domain/user/display-name.js';
+
+export {
+  User,
+  type CreateUserInput,
+  type UserCreationDependencies,
+} from './domain/user/user.js';
+
+export {
+  INITIAL_USER_STATUS,
+  isUserStatus,
+  USER_STATUSES,
+  type UserStatus,
+} from './domain/user/user-status.js';
+
+export {
+  TenantName,
+} from './domain/tenant/tenant-name.js';
+
+export {
+  Tenant,
+  type CreateTenantInput,
+  type TenantCreationDependencies,
+} from './domain/tenant/tenant.js';
+
+export {
+  INITIAL_TENANT_STATUS,
+  isTenantStatus,
+  TENANT_STATUSES,
+  type TenantStatus,
+} from './domain/tenant/tenant-status.js';
+
+export {
+  isMembershipRole,
+  MEMBERSHIP_ROLES,
+  type MembershipRole,
+} from './domain/membership/membership-role.js';
+
+export {
+  INITIAL_MEMBERSHIP_STATUS,
+  isMembershipStatus,
+  MEMBERSHIP_STATUSES,
+  type MembershipStatus,
+} from './domain/membership/membership-status.js';
+
+export {
+  TenantMembership,
+  type CreateTenantMembershipInput,
+  type TenantMembershipCreationDependencies,
+} from './domain/membership/tenant-membership.js';
+
+export type {
+  UserRepository,
+} from './application/ports/user-repository.js';
+
+export type {
+  TenantRepository,
+} from './application/ports/tenant-repository.js';
+
+export type {
+  TenantMembershipRepository,
+} from './application/ports/tenant-membership-repository.js';
+
+export type {
+  IdentityTransaction,
+  IdentityUnitOfWork,
+} from './application/ports/identity-unit-of-work.js';
+
+export {
+  UserEmailAlreadyExistsError,
+} from './domain/user/user-email-already-exists-error.js';
+
+export {
+  PostgresUserRepository,
+} from './infrastructure/postgres/postgres-user-repository.js';
+
+export {
+  PostgresTenantRepository,
+} from './infrastructure/postgres/postgres-tenant-repository.js';
+
+export {
+  PostgresTenantMembershipRepository,
+} from './infrastructure/postgres/postgres-tenant-membership-repository.js';
+
+export {
+  PostgresIdentityUnitOfWork,
+} from './infrastructure/postgres/postgres-identity-unit-of-work.js';
+
+export type {
+  RegisterOwnerCommand,
+} from './application/register-owner/register-owner-command.js';
+
+export {
+  RegisterOwnerHandler,
+  type RegisterOwnerHandlerDependencies,
+} from './application/register-owner/register-owner-handler.js';
+
+export type {
+  RegisterOwnerResult,
+} from './application/register-owner/register-owner-result.js'
+
+export type {
+  PasswordHasher,
+} from './application/ports/password-hasher.js';
+
+export type {
+  PasswordCredentialRepository,
+} from './application/ports/password-credential-repository.js';
+
+export {
+  PasswordHash,
+} from './domain/credential/password-hash.js';
+
+export {
+  PasswordCredential,
+  type CreatePasswordCredentialInput,
+  type PasswordCredentialCreationDependencies,
+} from './domain/credential/password-credential.js';
+
+export {
+  PostgresPasswordCredentialRepository,
+} from './infrastructure/postgres/postgres-password-credential-repository.js';
+
+export {
+  PasswordSecret,
+} from './domain/credential/password-secret.js';
+
+export {
+  Argon2PasswordHasher,
+} from './infrastructure/security/argon2-password-hasher.js';
+
+export type {
+  AuthenticationIdentity,
+  AuthenticationMembership,
+} from './application/authentication/authentication-identity.js';
+
+export type {
+  AuthenticationRepository,
+} from './application/ports/authentication-repository.js';
+
+export {
+  PostgresAuthenticationRepository,
+} from './infrastructure/postgres/postgres-authentication-repository.js';
