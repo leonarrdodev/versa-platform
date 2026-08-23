@@ -157,3 +157,21 @@ export type {
 export {
   PostgresAuthenticationRepository,
 } from './infrastructure/postgres/postgres-authentication-repository.js';
+
+export {
+  InvalidCredentialsError,
+} from './application/authentication/invalid-credentials-error.js';
+
+export type {
+  LoginCommand,
+} from './application/authentication/login-command.js';
+
+export {
+  LoginHandler,
+  type LoginHandlerDependencies,
+} from './application/authentication/login-handler.js';
+
+export type {
+  LoginMembershipResult,
+  LoginResult,
+} from './application/authentication/login-result.js';
