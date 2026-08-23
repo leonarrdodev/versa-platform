@@ -1,12 +1,12 @@
 # Roadmap Mestre — Versa Platform
 
-> **Versão consolidada — Anexos I, II, III, IV, V, VI, VII, VIII, IX e X incorporados**  
-> **Atualização:** 2026-08-07
+> **Versão consolidada — Anexos I, II, III, IV, V, VI, VII, VIII, IX, X, XI e XII incorporados**  
+> **Atualização:** 2026-08-16
 
 
 > **Documento de direção do projeto**
 >
-> Este roadmap consolida a visão original da Versa Platform com o **Anexo I — Experiência, CX e Inteligência Profunda**, o **Anexo II — Padrões Invisíveis, Canal de Atendimento e Ativos Criativos**, o **Anexo III — Inteligência Financeira Avançada**, o **Anexo IV — Segurança de Automação, Custo de IA e Nota de Integração**, o **Anexo V — Ingestão Estratégica, Agente Mestre e Agent Registry**, o **Anexo VI — Transparência Operacional, Decision Safety e Governança de Agentes**, o **Anexo VII — Customer Trust, Care e Experience Intelligence**, o **Anexo VIII — Cadência de Inteligência, Scheduler e Uso Seletivo de IA Externa**, o **Anexo IX — Strategy Workspace e Decision Profile** e o **Anexo X — Materiais Operacionais, Consumo e Previsão de Estoque**. Seu objetivo é preservar o foco, registrar as decisões já tomadas e organizar a evolução da plataforma por fases.
+> Este roadmap consolida a visão original da Versa Platform com o **Anexo I — Experiência, CX e Inteligência Profunda**, o **Anexo II — Padrões Invisíveis, Canal de Atendimento e Ativos Criativos**, o **Anexo III — Inteligência Financeira Avançada**, o **Anexo IV — Segurança de Automação, Custo de IA e Nota de Integração**, o **Anexo V — Ingestão Estratégica, Agente Mestre e Agent Registry**, o **Anexo VI — Transparência Operacional, Decision Safety e Governança de Agentes**, o **Anexo VII — Customer Trust, Care e Experience Intelligence**, o **Anexo VIII — Cadência de Inteligência, Scheduler e Uso Seletivo de IA Externa**, o **Anexo IX — Strategy Workspace e Decision Profile**, o **Anexo X — Materiais Operacionais, Consumo e Previsão de Estoque**, o **Anexo XI — Frontend Evolutivo, Responsividade e Refinamento Final** e o **Anexo XII — Media Library, Análises Assíncronas e Agenda Operacional**. Seu objetivo é preservar o foco, registrar as decisões já tomadas e organizar a evolução da plataforma por fases.
 
 ---
 
@@ -30,6 +30,11 @@ A plataforma deverá:
 - construir um perfil operacional de decisão do usuário baseado apenas em comportamentos observáveis dentro da plataforma;
 - gerir não apenas produtos vendáveis, mas também materiais operacionais consumidos no fulfillment;
 - antecipar ruptura de sacolas, embalagens, tags, cartões e outros consumíveis com base no consumo real e previsto;
+- manter uma biblioteca reutilizável de fotos, vídeos e outros ativos de mídia, vinculável a múltiplos produtos, campanhas, posts e estratégias;
+- permitir que agentes autorizados consultem e reutilizem ativos da Media Library diretamente na criação de posts, campanhas e materiais;
+- receber solicitações de análises demoradas como trabalhos assíncronos, permitindo que o usuário continue operando enquanto o processamento ocorre em background;
+- notificar o usuário quando análises, relatórios e outros trabalhos solicitados estiverem concluídos;
+- oferecer uma agenda operacional com visões de dia, semana e mês, tarefas vinculadas ao contexto do negócio e histórico de conclusão, adiamento e justificativas;
 - aprender com o histórico sem substituir o julgamento humano.
 
 A plataforma deve conseguir responder:
@@ -66,6 +71,13 @@ A plataforma deve conseguir responder:
 - Observabilidade desde o início.
 - Auditoria de ações e decisões.
 - Evolução incremental.
+- Produto construído por fatias verticais utilizáveis: domínio, backend, persistência e interface evoluem de forma coordenada quando houver interação humana relevante.
+- Frontend funcional desde as fases iniciais; capacidades operacionais não devem permanecer indefinidamente acessíveis apenas por API, scripts ou banco.
+- Frontend simples não significa frontend descartável: estrutura, separação de responsabilidades, estados, validação e integração com API devem permitir evolução gradual.
+- Responsividade funcional é requisito transversal desde a primeira versão de cada interface, considerando mobile, tablet e desktop.
+- Interfaces destinadas ao usuário devem ser validadas, quando aplicável, em viewport móvel e desktop antes de serem consideradas plenamente integradas.
+- Feedback de uso real e feedback direto do responsável pelo produto são insumos legítimos para ajustes contínuos de UX, fluxos, read models, endpoints e domínio.
+- O refinamento visual definitivo permanece concentrado na Fase 17 — Frontend Refinement & Experience Consolidation.
 - Sem abstrações prematuras.
 - Sem microsserviços por moda.
 - Sem inteligência artificial sobre dados frágeis ou sem rastreabilidade.
@@ -90,6 +102,11 @@ A plataforma deve conseguir responder:
 - Agente não é sinônimo de LLM.
 - IA externa será consultada apenas quando houver ganho real em linguagem natural, interpretação semântica, síntese, geração criativa ou tarefas equivalentes.
 - Cálculos, regras, validações, agregações, filtros, scores, alertas e workflows devem preferir execução determinística ou estatística local antes de recorrer a LLM.
+- Ativos de mídia são entidades reutilizáveis e não devem ficar rigidamente pertencentes a um único produto ou campanha.
+- Trabalhos demorados solicitados pelo usuário devem preferir execução assíncrona em background, com estado, progresso quando aplicável, resultado persistido e notificação, sem bloquear a interface.
+- O Transactional Outbox e a infraestrutura de Background Jobs possuem responsabilidades distintas: o primeiro publica fatos de domínio com segurança; a segunda executa trabalhos solicitados, agendados ou computacionalmente demorados.
+- Análises comparativas devem calcular e estruturar dados por SQL, regras e estatística antes de usar LLM; a LLM recebe contexto estruturado principalmente para síntese, explicação e linguagem natural.
+- Agenda operacional humana e agenda de agentes/automações são conceitos distintos, embora possam se integrar por políticas explícitas.
 
 ### 2.1 Decisão arquitetural — automação e integrações nativas
 
@@ -159,6 +176,45 @@ Isso não significa aceitar prejuízo indefinidamente ou ignorar abuso. Signific
 Métricas financeiras deverão ser lidas junto de métricas de experiência e confiança.
 
 Uma decisão que aumenta receita no curto prazo, mas aumenta reclamações, recorrência de problemas, cancelamentos ou abandono, não será considerada automaticamente uma boa decisão.
+
+### 2.3 Decisão arquitetural — frontend evolutivo e responsivo
+
+O frontend não será criado apenas ao final do projeto.
+
+Sempre que uma capacidade possuir interação humana relevante, a implementação deverá buscar fechar uma fatia vertical utilizável:
+
+```text
+Interface
+→ API
+→ caso de uso
+→ domínio
+→ persistência
+→ resposta
+→ interface atualizada
+```
+
+A interface inicial priorizará funcionalidade, clareza, teste, responsividade e velocidade de evolução. O acabamento definitivo ficará para a Fase 17.
+
+Responsividade funcional é obrigatória desde o início:
+
+```text
+Desktop
+↕
+Tablet
+↕
+Mobile
+```
+
+A interface também funcionará como mecanismo de validação da arquitetura. Fricções observadas durante o uso — incluindo feedback direto do responsável pelo produto — poderão justificar mudanças em UX, contratos HTTP, read models, casos de uso ou domínio quando houver benefício real e rastreável.
+
+A Fase 17 deixa de significar “criar o frontend” e passa a significar:
+
+```text
+Frontend Refinement & Experience Consolidation
+```
+
+Ela será a última fase dedicada especificamente ao frontend, consolidando design system, UX avançada, acessibilidade, performance percebida, consistência e refinamento responsivo.
+
 
 ---
 
@@ -348,20 +404,22 @@ Uma base documental suficiente para orientar o desenvolvimento sem depender apen
 
 # Fase 1 — Fundação executável e primeira vertical slice
 
-**Status:** em andamento.
+**Status:** concluída em 2026-08-16.
 
 ## Objetivo
 
 Construir a primeira funcionalidade real de ponta a ponta:
 
 ```text
-Criar produto
+Interface de produto
+→ criar produto
 → validar domínio
 → persistir produto
 → registrar ProductCreated
 → processar evento
 → atualizar projeção
 → consultar produto
+→ atualizar interface
 ```
 
 ## Tópicos
@@ -382,6 +440,23 @@ Criar produto
 - testes;
 - Git;
 - CI inicial.
+
+### Frontend funcional inicial
+
+- aplicação frontend inicial sem compromisso com refinamento visual definitivo;
+- estrutura de navegação mínima e não descartável;
+- formulário de criação de produto;
+- listagem paginada e visualização dos produtos projetados no read model;
+- camada consistente de chamadas à API;
+- tratamento de loading, sucesso, erro e estado vazio quando aplicável;
+- validação básica de formulário;
+- feedback visual para operações assíncronas;
+- comportamento funcional em mobile, tablet e desktop;
+- ações utilizáveis por toque, sem depender exclusivamente de hover;
+- validação mínima em viewport móvel e desktop;
+- ajustes iterativos a partir do uso real e do feedback do responsável pelo produto.
+
+O objetivo desta etapa não é definir o design final da Versa. É permitir que a primeira vertical slice seja usada e avaliada como produto real.
 
 ### Banco de dados
 
@@ -538,7 +613,7 @@ A meta da fase não é construir a interface de observabilidade, mas garantir qu
 
 ## Resultado esperado
 
-Primeira vertical slice funcional, modular, multi-tenant, transacional, orientada a eventos, testável e preparada para read models futuros.
+Primeira vertical slice funcional, modular, multi-tenant, transacional, orientada a eventos, testável, acessível por uma interface mínima responsiva e preparada para read models e interfaces futuras.
 
 ---
 
@@ -597,6 +672,10 @@ Transformar o catálogo em uma representação completa e confiável dos produto
 - marcas;
 - coleções;
 - tags;
+- MediaAsset como entidade própria para fotos, vídeos e outros ativos;
+- galeria inicial de ativos;
+- vínculo muitos-para-muitos entre mídia e produtos;
+- metadados, tags e histórico básico de uso da mídia;
 - imagens;
 - descrições;
 - atributos;
@@ -1806,6 +1885,13 @@ Consolidar dados em indicadores úteis e transformar interfaces passivas em cent
 - KPIs;
 - filtros por período;
 - comparação entre períodos;
+- Comparison Lab para comparações ad hoc entre períodos, produtos, campanhas, canais, regiões, bairros e outras dimensões;
+- comparação combinada entre múltiplas dimensões e subconjuntos de dados;
+- salvamento de configurações de comparação;
+- Analysis Request para análises que excedam o tempo apropriado de uma requisição HTTP;
+- execução assíncrona de análises em background;
+- estado `queued`, `running`, `completed`, `failed` e `cancelled` para trabalhos analíticos;
+- notificação de conclusão e acesso posterior ao resultado;
 - metas;
 - alertas;
 - relatórios;
@@ -2146,33 +2232,106 @@ O resultado deve ser sustentado por dados, período, amostra e limitações.
 - apoio a lançamentos;
 - tom de voz.
 
-### Galeria de produtos e ativos criativos
+### Media Library e ativos criativos reutilizáveis
 
-- vínculo com produto;
-- arquivo preparado externamente;
-- destino do ativo;
-- tipo de foto;
-- ocasião;
+Fotos, vídeos e outros materiais serão tratados como `MediaAsset`, entidades próprias e reutilizáveis.
+
+Uma mídia não pertencerá obrigatoriamente a um único produto.
+
+Exemplo:
+
+```text
+Vídeo de divulgação
+├── Ribana Preta
+├── Ribana Branca
+└── Ribana Bege
+```
+
+Relações possíveis:
+
+```text
+MediaAsset
+├── Products[]
+├── Campaigns[]
+├── Posts[]
+├── Strategies[]
+└── UsageHistory[]
+```
+
+Capacidades previstas:
+
+- upload de fotos e vídeos;
+- vínculo com zero, um ou vários produtos;
+- vínculo posterior com campanhas, posts e estratégias;
+- tags;
+- tipo de mídia;
+- orientação e proporção quando conhecidas;
+- origem;
 - descrição;
 - contexto textual;
-- versão;
-- origem;
 - data de upload;
 - status de uso;
 - histórico de utilização;
-- busca por metadados;
-- fornecimento de contexto aos agentes de Social Media e Copy.
+- busca e filtros por produto, campanha, tipo, tag, período e status;
+- visualização em galeria;
+- reutilização sem duplicar o arquivo apenas porque mudou o destino;
+- registro de onde o ativo foi utilizado;
+- base futura para relacionar desempenho comercial ao ativo criativo.
 
-Decisões:
+### Acesso da Media Library pelos agentes
 
-- os agentes trabalharão apenas com metadados e contexto textual;
-- não haverá análise da imagem por modelo de visão nesta etapa;
-- o backend não redimensionará, comprimirá nem gerará derivados;
-- Canva continuará sendo usado para redes sociais;
-- iLoveIMG continuará sendo usado para compressão de imagens do site;
-- uma mesma foto poderá possuir registros distintos por destino.
+Agentes de Marketing, Copy, Social Media e outros agentes explicitamente autorizados poderão consultar diretamente a Media Library.
 
-> Schema técnico pendente. Será definido na fase correspondente.
+Fluxo conceitual:
+
+```text
+Agente de Social Media
+        ↓
+consulta Media Library
+        ↓
+filtra ativos adequados
+        ↓
+seleciona foto/vídeo existente
+        ↓
+associa ao post/campanha
+        ↓
+gera copy, legenda ou plano
+        ↓
+registra uso do ativo
+```
+
+O objetivo é permitir que os agentes utilizem os ativos disponíveis com liberdade operacional dentro do escopo autorizado, sem exigir que o usuário reenvie manualmente a mesma mídia em toda solicitação.
+
+Regras:
+
+- acesso respeita tenant e permissões do agente;
+- a seleção do ativo deve ser auditável;
+- o agente não deve apagar ou sobrescrever o arquivo original sem autorização;
+- o histórico de uso deve permanecer consultável;
+- capacidades de visão computacional poderão ser adicionadas quando justificadas, mas não são requisito para a existência da Media Library;
+- metadados fornecidos pelo usuário permanecem utilizáveis mesmo quando análise visual automática não estiver habilitada.
+
+### Agenda de conteúdo e operação
+
+O calendário de marketing será integrado à Agenda Operacional da Versa.
+
+Exemplos:
+
+```text
+Segunda
+→ publicar Ribana Preta
+→ MediaAsset #123
+→ Product #45
+→ Campaign #9
+
+Quarta
+→ revisar desempenho da campanha
+
+Sexta
+→ preparar planejamento da próxima semana
+```
+
+Posts planejados poderão existir como tarefas da agenda e manter vínculo com produto, mídia, campanha e estratégia.
 
 ## Resultado esperado
 
@@ -2332,6 +2491,11 @@ Antecipar cenários, detectar relações ocultas e revelar padrões difíceis de
 ### Fundação de dados
 
 - preparação de dados;
+- pipelines de análise multidimensional solicitados sob demanda;
+- comparação entre períodos, produtos, campanhas, canais, regiões, bairros e combinações dessas dimensões;
+- resultados intermediários estruturados e persistíveis para análises demoradas;
+- execução de cálculos e estatística antes da camada de linguagem natural;
+- entrega à LLM apenas de resultados, evidências, limitações e contexto necessários para explicação quando a LLM for útil;
 - qualidade;
 - completude;
 - normalização;
@@ -3600,6 +3764,8 @@ Casos típicos sem LLM:
 Casos típicos com possível LLM:
 
 - copy;
+- explicação em linguagem natural de análises comparativas já calculadas;
+- síntese de resultados de Analysis Requests;
 - legenda;
 - resumo;
 - explicação em linguagem natural;
@@ -3615,6 +3781,14 @@ Casos típicos com possível LLM:
 O LLM deverá receber contexto estruturado e minimizado, preferencialmente preparado pelas Camadas A e B.
 
 ## Agentes planejados
+
+### Acesso de agentes a ativos e trabalhos assíncronos
+
+Agentes autorizados poderão consultar a Media Library como ferramenta da plataforma, selecionar ativos já existentes e associá-los a posts, campanhas ou estratégias conforme seu escopo.
+
+Agentes também poderão iniciar ou participar de `AnalysisRequest` e outros trabalhos assíncronos quando a tarefa não precisar ser respondida dentro do ciclo de uma requisição HTTP.
+
+A conclusão do trabalho será persistida e poderá gerar notificação ao usuário, sem manter a interface bloqueada durante o processamento.
 
 ### Agente Mestre — Treinador e Orquestrador
 
@@ -4182,6 +4356,19 @@ Construir o **Automation Engine nativo da Versa** e o **Intelligence Scheduler**
 ## Tópicos
 
 - Automation Engine nativo;
+- Background Job Engine para trabalhos demorados solicitados pelo usuário ou por capacidades internas;
+- fila e lifecycle de `AnalysisRequest`;
+- persistência de status, progresso quando aplicável, resultado, falha e timestamps de jobs;
+- notificações de conclusão de trabalhos assíncronos;
+- cancelamento e retry controlado de jobs quando aplicável;
+- separação explícita entre Domain Event Outbox e Background Jobs;
+- Agenda Operacional de tarefas humanas;
+- tarefas com dia, horário opcional, prioridade, vínculos e responsável;
+- estados planejada, em andamento, concluída, adiada e cancelada;
+- adiamento com motivo, data original, nova data, autor e histórico;
+- visões diária, semanal e mensal;
+- filtros por status, responsável, domínio, campanha, produto e período;
+- vínculo entre agenda humana e automações apenas quando explicitamente configurado;
 - Intelligence Scheduler;
 - Analysis Cadence Engine;
 - agenda de agentes;
@@ -4815,13 +5002,28 @@ A Versa possui um motor de automações próprio, integrado aos eventos, à Deci
 
 ---
 
-# Fase 17 — Interfaces e experiência do usuário
+# Fase 17 — Frontend Refinement & Experience Consolidation
 
 ## Objetivo
 
-Criar uma experiência clara para operação, análise, decisão e execução.
+Refinar, consolidar e elevar ao nível definitivo a experiência do frontend que já terá evoluído junto das fases anteriores.
 
-## Tópicos
+Esta fase **não é responsável por criar o frontend pela primeira vez**. As interfaces operacionais, Workspaces, dashboards, decisões, agentes e demais capacidades humanas devem aparecer progressivamente nas fases em que suas capacidades de backend se tornam utilizáveis.
+
+A Fase 17 é a última fase dedicada especificamente ao frontend e concentra:
+
+- design system definitivo;
+- consistência global;
+- UX avançada;
+- acessibilidade aprofundada;
+- performance percebida;
+- refinamento responsivo;
+- Actionable UI avançada;
+- consolidação de padrões construídos em momentos diferentes do projeto.
+
+Os itens abaixo representam **alvos de consolidação e refinamento**. Sua presença nesta fase não significa que devam esperar até a Fase 17 para possuir uma primeira interface funcional.
+
+## Alvos de consolidação e refinamento
 
 - painel administrativo;
 - dashboard;
@@ -5516,7 +5718,7 @@ Cada card poderá exibir:
 
 ## Resultado esperado
 
-Uma plataforma utilizável diariamente, com transparência controlada sobre agentes, conhecimento, versões, custos e limites.
+Uma experiência visual consolidada, coerente, acessível, responsiva e eficiente sobre um frontend já utilizado e amadurecido ao longo do projeto, preservando transparência controlada sobre agentes, conhecimento, versões, custos e limites.
 
 ---
 
@@ -5575,6 +5777,14 @@ Responsabilidades:
 - auditoria de acesso;
 - nunca expor segredo em logs;
 - nunca persistir credencial em eventos de domínio.
+
+### Integração de calendários
+
+- integração opcional da Agenda Operacional com calendários externos;
+- sincronização controlada de tarefas/eventos;
+- mapeamento entre tarefas Versa e eventos externos;
+- política de conflitos, direção de sincronização e origem da verdade por tenant;
+- auditoria de criação, alteração e remoção sincronizada.
 
 ### Provider Adapters
 
@@ -7210,7 +7420,7 @@ Fase 13 — Decision Layer
 Fase 14 — Memória Estratégica e Evidence Engine
 Fase 15 — Agentes assistivos
 Fase 16 — Automation Engine e orquestração nativa
-Fase 17 — Interfaces e experiência do usuário
+Fase 17 — Frontend Refinement & Experience Consolidation
 Fase 18 — Integration Platform e integrações externas
 Fase 19 — Observabilidade, segurança, privacidade e confiabilidade
 Fase 20 — Escalabilidade e evolução da arquitetura
@@ -7254,6 +7464,18 @@ Fase 20
   ↓
 Fase 21
 ```
+
+Camada transversal desde a Fase 1:
+
+```text
+Capacidade com interação humana
+→ interface mínima funcional
+→ responsividade funcional
+→ uso e feedback
+→ evolução junto ao domínio
+```
+
+A Fase 17 é um **checkpoint amplo de consolidação**, não o primeiro momento em que a interface aparece. Interfaces criadas depois dela nas Fases 18–21 deverão seguir os padrões consolidados e poderão receber ajustes específicos sem reabrir a ideia de um frontend separado do restante do produto.
 
 Algumas fases podem avançar em paralelo, mas as dependências de dados devem ser respeitadas.
 
@@ -7333,6 +7555,12 @@ Exemplos:
 - forecasting de consumíveis depende de histórico de uso, previsão de pedidos e lead time.
 - estratégias que exigem materiais especiais devem declarar esse consumo para o Preview de Impacto.
 - materiais inativos ou descontinuados devem preservar histórico em pedidos antigos.
+- capacidades com interação humana devem ganhar interface mínima utilizável na fase em que se tornam operacionalmente relevantes.
+- a interface pode revelar necessidades legítimas de novos read models, endpoints, estados assíncronos ou ajustes de domínio.
+- responsividade funcional deve ser validada desde a primeira versão, sem aguardar a Fase 17.
+- interfaces densas devem possuir estratégia responsiva própria; “encolher o desktop” não é solução padrão.
+- feedback direto do responsável pelo produto e uso real devem alimentar ajustes iterativos sem transformar refinamento cosmético em bloqueio de entrega.
+- a Fase 17 depende de um frontend já existente e amadurecido; seu objetivo é consolidar e refinar, não iniciar a camada visual.
 
 ---
 
@@ -7367,8 +7595,13 @@ Antes disso, precisamos concluir:
 - worker;
 - projeção;
 - consulta;
+- contratos HTTP e política de falhas do worker;
+- frontend funcional mínimo da vertical slice de Product;
+- validação funcional em viewport móvel e desktop;
 - testes;
 - documentação.
+
+A restrição contra “frontend complexo” continua válida: nesta fase entra apenas a interface necessária para fechar e usar a vertical slice, sem antecipar o refinamento visual definitivo.
 
 ---
 
@@ -11034,4 +11267,1641 @@ Product
 ```
 
 O domínio de materiais operacionais será aberto depois que a primeira vertical slice estiver concluída, reutilizando os padrões técnicos já estabelecidos sem misturar `OperationalSupply` com `Product`.
+
+---
+
+# Anexo XI — Frontend Evolutivo, Responsividade e Refinamento Final
+
+> Complementa o Roadmap Mestre e os Anexos I, II, III, IV, V, VI, VII, VIII, IX e X.  
+> Estabelece o frontend como camada transversal do desenvolvimento, define responsividade funcional desde a primeira versão e reinterpreta a Fase 17 como etapa de **Frontend Refinement & Experience Consolidation**.  
+> A partir deste anexo, domínio, backend, persistência e interface passam a evoluir por fatias verticais sempre que houver interação humana relevante.
+
+## AXI.1 Objetivo
+
+O frontend do Versa não será desenvolvido apenas ao final do projeto.
+
+A partir deste anexo, o frontend passa a evoluir em paralelo com o backend e com os módulos de domínio, permitindo que cada capacidade relevante do sistema possa ser utilizada, validada e compreendida visualmente durante o desenvolvimento.
+
+O objetivo desta decisão não é antecipar uma interface altamente refinada, mas evitar que o Versa permaneça durante grande parte do projeto como um conjunto de APIs, serviços e processos internos sem uma interface utilizável.
+
+Filosofia:
+
+> **Construir o produto verticalmente: domínio, backend, persistência e interface evoluem juntos.**
+
+## AXI.2 Princípio de desenvolvimento vertical
+
+Sempre que uma funcionalidade possuir interação humana relevante, seu desenvolvimento deverá buscar fechar o fluxo completo.
+
+```text
+Usuário
+↓
+Interface
+↓
+Ação / formulário
+↓
+Requisição HTTP
+↓
+API
+↓
+Caso de uso
+↓
+Domínio
+↓
+Persistência
+↓
+Resposta
+↓
+Atualização da interface
+```
+
+Em vez de desenvolver todos os módulos de backend primeiro e somente posteriormente criar a interface, o Versa será construído em fatias verticais utilizáveis.
+
+Exemplo:
+
+```text
+Produto
+→ banco
+→ domínio
+→ API
+→ tela
+→ validação
+
+Estoque
+→ banco
+→ domínio
+→ eventos
+→ API
+→ tela
+→ validação
+
+Venda
+→ estoque
+→ custos
+→ API
+→ tela
+→ validação
+```
+
+## AXI.3 Regra geral
+
+Toda capacidade relevante deverá, quando fizer sentido, chegar até uma interface utilizável.
+
+Elementos exclusivamente técnicos podem permanecer sem representação visual direta, por exemplo:
+
+- logger;
+- event bus;
+- migrations;
+- adapters internos;
+- filas;
+- mecanismos de retry;
+- infraestrutura de banco;
+- componentes internos de segurança;
+- utilitários;
+- bibliotecas compartilhadas.
+
+Funcionalidades com interação operacional deverão preferencialmente possuir uma representação mínima no frontend, incluindo:
+
+- produtos;
+- estoque;
+- vendas;
+- clientes;
+- fornecedores;
+- campanhas;
+- estratégias;
+- custos;
+- alertas;
+- recomendações;
+- decisões;
+- evidências;
+- automações;
+- agentes;
+- configurações.
+
+## AXI.4 Frontend funcional durante o projeto
+
+Durante a maior parte do desenvolvimento, o frontend priorizará:
+
+1. funcionalidade;
+2. clareza;
+3. facilidade de teste;
+4. consistência mínima;
+5. velocidade de evolução.
+
+São aceitáveis durante essa etapa:
+
+- layouts simples;
+- componentes reutilizáveis básicos;
+- navegação funcional;
+- tabelas;
+- formulários;
+- cards;
+- estados de loading;
+- estados vazios;
+- mensagens de erro;
+- confirmações;
+- filtros simples;
+- páginas de detalhes;
+- indicadores essenciais.
+
+A interface deve ser suficientemente organizada para uso real, sem transformar refinamento visual em bloqueio para a evolução funcional.
+
+## AXI.5 Evitar frontend descartável
+
+Apesar de inicialmente simples, o frontend não deverá ser tratado como protótipo descartável.
+
+Desde o início deverão existir, em nível adequado à maturidade do projeto:
+
+- estrutura organizada de páginas;
+- separação entre componentes e lógica;
+- gerenciamento consistente de chamadas à API;
+- tratamento de erros;
+- estados de carregamento;
+- validação;
+- autenticação quando introduzida;
+- componentes reutilizáveis;
+- padrões básicos de navegação;
+- organização por domínio ou feature.
+
+> **Simplicidade inicial significa baixo refinamento, não baixa qualidade estrutural.**
+
+## AXI.6 Interface como mecanismo de validação da arquitetura
+
+O frontend também será instrumento de validação do backend e do domínio.
+
+Durante a implementação de uma tela podem surgir problemas como:
+
+- excesso de requisições para montar uma página;
+- ausência de informações necessárias;
+- endpoints excessivamente genéricos;
+- endpoints excessivamente fragmentados;
+- fluxos incompatíveis com a operação real;
+- dados difíceis de interpretar;
+- etapas desnecessárias;
+- ausência de feedback para operações assíncronas.
+
+Esses problemas deverão ser tratados como feedback arquitetural legítimo.
+
+A interface não é apenas consumidora do backend. Ela também ajuda a revelar limitações no desenho do sistema.
+
+## AXI.7 Primeiras interfaces prioritárias
+
+As primeiras interfaces acompanharão os primeiros domínios operacionais.
+
+Evolução conceitual:
+
+```text
+Dashboard básico
+
+Produtos
+├─ Cadastro
+├─ Consulta
+├─ Lista quando o domínio suportar
+├─ Edição quando o caso de uso existir
+└─ Detalhes
+
+Estoque
+├─ Saldo
+├─ Entrada
+├─ Saída
+└─ Histórico
+
+Vendas
+├─ Registrar venda
+├─ Histórico
+└─ Detalhes
+
+Clientes
+├─ Lista
+└─ Histórico básico
+
+Fornecedores
+├─ Cadastro
+└─ Histórico básico
+```
+
+As telas crescem junto de seus respectivos domínios.
+
+## AXI.8 Evolução para Workspaces
+
+Páginas simples poderão evoluir gradualmente para os Workspaces definidos na arquitetura:
+
+```text
+Produto simples
+↓
+Product Workspace
+
+Cliente simples
+↓
+Customer Workspace
+
+Fornecedor simples
+↓
+Supplier Workspace
+
+Depois:
+Campaign Workspace
+Company Workspace
+Strategy Workspace
+Profile Workspace
+```
+
+Não é necessário construir desde o primeiro momento todas as capacidades previstas para cada Workspace.
+
+## AXI.9 Evolução da inteligência na interface
+
+A camada de inteligência aparecerá progressivamente no frontend.
+
+```text
+Estágio inicial
+Dados
+Métricas
+Histórico
+Alertas determinísticos
+
+↓
+
+Estágio intermediário
+Insights
+Recomendações
+Evidências
+Explicações
+
+↓
+
+Estágio avançado
+Decisões
+Impact Preview
+Ações recomendadas
+Aprovação humana
+Agentes
+Automação
+Auditoria
+Outcome Tracking
+```
+
+A própria interface deverá tornar visível a evolução arquitetural e de inteligência do Versa.
+
+## AXI.10 Actionable UI
+
+O princípio de Actionable UI permanece central.
+
+Sempre que possível, informações relevantes deverão conduzir naturalmente a ações.
+
+```text
+Estoque crítico
+↓
+Visualizar produto
+↓
+Analisar histórico
+↓
+Consultar fornecedor
+↓
+Criar reposição
+```
+
+```text
+Campanha com margem abaixo da meta
+↓
+Visualizar evidências
+↓
+Simular alteração
+↓
+Visualizar impacto
+↓
+Aceitar / rejeitar recomendação
+```
+
+Nas fases iniciais, essas experiências poderão ser simplificadas e crescer junto dos mecanismos disponíveis no backend.
+
+## AXI.11 Uso real durante o desenvolvimento
+
+Sempre que uma funcionalidade atingir estabilidade mínima, deverá ser considerada sua utilização real pela Versa Wear.
+
+O uso real ajudará a validar:
+
+- clareza dos fluxos;
+- facilidade de cadastro;
+- quantidade de etapas;
+- informações realmente necessárias;
+- erros operacionais;
+- necessidades não previstas;
+- comportamento de usuários reais;
+- qualidade das regras de negócio.
+
+O sistema deverá crescer em contato com a operação real e não apenas com hipóteses de projeto.
+
+## AXI.12 Feedback operacional e participação contínua do responsável pelo produto
+
+O frontend será ajustado continuamente durante o desenvolvimento.
+
+Feedback direto do responsável pelo produto — inclusive observações, preferências e “palpites” sobre layout, fluxo, hierarquia, navegação e comportamento — será tratado como insumo legítimo de descoberta e evolução.
+
+Exemplos:
+
+- “O cadastro demora demais.”
+- “Preciso enxergar o estoque antes de registrar a venda.”
+- “Esse dado não é útil aqui.”
+- “Quero esta ação mais visível no celular.”
+- “Essa organização faz mais sentido para a operação.”
+- “Preciso saber de qual fornecedor veio essa peça.”
+- “Quero repetir uma venda parecida.”
+
+O feedback poderá gerar:
+
+- mudanças de UX;
+- reorganização visual;
+- novos campos;
+- novos casos de uso;
+- novos eventos;
+- novos read models;
+- alterações de domínio;
+- novas automações.
+
+Esses ajustes devem ser feitos iterativamente, sem esperar a Fase 17, desde que não introduzam complexidade sem benefício ou desviem desnecessariamente o foco da fase atual.
+
+## AXI.13 Refinamento visual não será prioridade inicial
+
+Durante o desenvolvimento dos módulos, investimentos excessivos deverão ser evitados em:
+
+- animações complexas;
+- microinterações avançadas;
+- identidade visual definitiva;
+- design system extenso;
+- dashboards altamente customizados;
+- transições sofisticadas;
+- detalhes cosméticos de baixo impacto operacional.
+
+Responsividade funcional, porém, **não pertence a esta lista de adiamentos**: ela é obrigatória desde o início.
+
+## AXI.14 Fase dedicada — Frontend Refinement & Experience Consolidation
+
+A Fase 17 não será responsável por criar o frontend.
+
+Ela será responsável por refinar e consolidar o frontend já existente e amadurecido ao longo das outras fases.
+
+```text
+Backend + domínio + dados + frontend evoluindo juntos
+↓
+Produto funcional durante o projeto
+↓
+Frontend Refinement & Experience Consolidation
+↓
+Experiência consolidada
+```
+
+A Fase 17 será a **última fase dedicada especificamente ao frontend**. Capacidades introduzidas depois dela continuarão obrigadas a seguir os padrões consolidados.
+
+## AXI.15 Escopo do Frontend Refinement
+
+### Design system definitivo
+
+- tipografia;
+- espaçamento;
+- cores;
+- elevação;
+- bordas;
+- estados;
+- componentes;
+- ícones;
+- padrões de interação.
+
+### UX
+
+- redução de cliques;
+- atalhos;
+- ações em contexto;
+- navegação;
+- hierarquia visual;
+- busca;
+- filtros;
+- bulk actions;
+- empty states;
+- estados de erro;
+- onboarding.
+
+### Actionable UI avançada
+
+- ações diretamente associadas aos insights;
+- previews;
+- comparações;
+- simulações;
+- confirmações contextualizadas;
+- explicação de risco.
+
+### Responsividade
+
+Refinamento completo dos comportamentos já funcionais em diferentes tamanhos de tela.
+
+### Acessibilidade
+
+- contraste;
+- foco;
+- teclado;
+- labels;
+- semântica;
+- leitores de tela;
+- feedback visual.
+
+### Performance percebida
+
+- skeletons;
+- optimistic updates quando seguros;
+- carregamento progressivo;
+- redução de layout shift;
+- cache de interface;
+- melhor feedback para operações demoradas.
+
+### Consistência
+
+Unificação das telas construídas em diferentes momentos do projeto.
+
+## AXI.16 Frontend como registro da evolução do sistema
+
+```text
+Versa inicial
+Produtos + Estoque + Vendas
+
+↓
+
+Versa operacional
+Clientes + Fornecedores + Financeiro + Campanhas
+
+↓
+
+Versa inteligente
+Insights + Evidências + Recomendações
+
+↓
+
+Versa orientado a decisões
+Decision Engine + Agents + Automation
+
+↓
+
+Versa maduro
+Workspaces + Actionable UI + Refinamento final
+```
+
+O produto deverá ser utilizável durante sua evolução, e não somente depois da conclusão de dezenas de módulos.
+
+## AXI.17 Regra contra overengineering visual
+
+> **Complexidade visual ou arquitetural pode ser introduzida quando resolve um problema real ou possui objetivo claro de aprendizado, mas nunca deve impedir a entrega de uma funcionalidade utilizável.**
+
+## AXI.18 Critério de conclusão de uma funcionalidade
+
+Sempre que aplicável, uma capacidade destinada ao usuário somente será considerada plenamente integrada quando existir uma cadeia funcional verificável:
+
+```text
+Interface
+↓
+API
+↓
+Caso de uso
+↓
+Domínio
+↓
+Persistência
+↓
+Resposta
+↓
+Interface atualizada
+```
+
+Isso não significa que toda implementação interna deve possuir UI. Significa que capacidades operacionais destinadas ao usuário não deverão permanecer indefinidamente acessíveis apenas por scripts, banco, curl, Postman ou chamadas manuais à API.
+
+## AXI.19 Consequência para o roadmap
+
+Frontend deixa de ser exclusivamente uma fase final.
+
+Ele passa a ser uma camada transversal do desenvolvimento.
+
+Cada fase deverá avaliar:
+
+```text
+Existe interação humana nesta capacidade?
+↓
+Sim
+↓
+Qual é a interface mínima necessária para utilizá-la?
+↓
+Implementar junto ao módulo
+```
+
+A Fase 17 permanece no roadmap, reinterpretada como **Frontend Refinement & Experience Consolidation**.
+
+### Compatibilidade com anexos anteriores
+
+Referências dos Anexos I–X à antiga Fase 17 como local de implementação de interfaces passam a ser interpretadas da seguinte forma:
+
+- a capacidade funcional e sua interface mínima devem aparecer junto da fase proprietária quando forem utilizáveis;
+- a Fase 17 representa consolidação, refinamento, consistência e UX avançada;
+- quando um item antigo estiver associado somente à Fase 17 por ser essencialmente visual, ele deverá ser introduzido na primeira fase em que a capacidade correspondente existir e refinado na Fase 17.
+
+Isso evita reescrever retroativamente todas as tabelas de distribuição sem preservar uma interpretação arquitetural ultrapassada.
+
+## AXI.20 Responsividade como requisito transversal
+
+A responsividade não será tratada apenas como parte do refinamento visual.
+
+O sistema será utilizado em:
+
+- smartphones;
+- tablets;
+- notebooks;
+- desktops;
+- diferentes resoluções e proporções de tela.
+
+> **Responsividade é requisito funcional e arquitetural transversal do frontend, não apenas refinamento visual.**
+
+Toda interface deverá possuir comportamento utilizável em diferentes tamanhos de tela desde sua primeira versão funcional.
+
+## AXI.21 Princípio Mobile-Aware e dois níveis de responsividade
+
+O desenvolvimento não deverá assumir um monitor grande como contexto padrão.
+
+```text
+Desktop
+↕
+Tablet
+↕
+Mobile
+```
+
+Isso não exige uma filosofia estritamente mobile-first para todas as telas. Exige que layout, navegação, densidade de informação e interação considerem múltiplos formatos desde a concepção.
+
+### Durante todo o projeto — responsividade funcional
+
+Obrigatória:
+
+- telas utilizáveis em smartphones;
+- ausência de overflow horizontal desnecessário;
+- formulários adaptáveis;
+- navegação acessível em telas pequenas;
+- alvos de toque adequados;
+- cards reorganizáveis;
+- grids flexíveis;
+- estratégia para tabelas pequenas;
+- modais compatíveis com mobile;
+- menus adaptáveis;
+- textos legíveis;
+- ações principais acessíveis;
+- dashboards reorganizáveis;
+- componentes capazes de mudar de disposição conforme o espaço.
+
+Uma funcionalidade com interface não será considerada plenamente integrada se for praticamente inutilizável em dispositivos móveis.
+
+### Fase 17 — refinamento responsivo
+
+Poderá aprofundar:
+
+- breakpoints;
+- proporções;
+- classes específicas de dispositivos;
+- gestos e interações touch;
+- menus;
+- dashboards densos;
+- densidade informacional;
+- transições;
+- portrait e landscape;
+- testes extensivos em resoluções e dispositivos.
+
+> **No início, o Versa precisa funcionar bem em diferentes telas. Na consolidação, deverá funcionar excepcionalmente bem em diferentes telas.**
+
+## AXI.22 Interfaces densas e tabelas
+
+Workspaces, dashboards, agentes, recomendações, evidências, histórico de decisões, auditoria, automações, simulações, Impact Preview, métricas e gráficos não deverão simplesmente ser comprimidos para caber em telas pequenas.
+
+A hierarquia poderá mudar conforme o contexto.
+
+Exemplo:
+
+```text
+Desktop
+──────────────────────────────────────
+Produto | Métricas | Estoque | Insights
+        | Histórico | Ações | Evidências
+```
+
+poderá se transformar em:
+
+```text
+Mobile
+
+Produto
+[Resumo]
+[Estoque]
+[Métricas]
+[Insights]
+[Ações]
+[Histórico]
+[Evidências]
+```
+
+### Tabelas
+
+Não será solução padrão reduzir uma tabela inteira até fazê-la caber na tela.
+
+Estratégias possíveis:
+
+- ocultar colunas secundárias;
+- priorizar colunas;
+- scroll horizontal controlado;
+- visualização em cards;
+- expansão de detalhes;
+- filtros;
+- agrupamento;
+- página de detalhes;
+- layout específico para mobile.
+
+A estratégia será escolhida de acordo com a tarefa do usuário.
+
+## AXI.23 Actionable UI responsiva e contextos reais
+
+Em telas menores, ações prioritárias devem continuar facilmente acessíveis.
+
+```text
+Alerta de estoque
+
+Ribana Preta
+2 unidades restantes
+
+[Ver produto]
+[Repor estoque]
+```
+
+O Versa deverá considerar ações realizadas longe de um computador, incluindo:
+
+- registrar venda;
+- consultar estoque;
+- cadastrar entrada de mercadoria;
+- consultar cliente;
+- ver alerta;
+- aprovar ou rejeitar ação;
+- consultar recomendação.
+
+Operações altamente analíticas podem oferecer experiência mais rica em telas maiores sem impedir consultas e ações essenciais pelo celular.
+
+## AXI.24 Componentes responsivos e touch
+
+Componentes compartilhados deverão evitar dependência rígida de:
+
+- larguras fixas;
+- alturas fixas desnecessárias;
+- posições absolutas;
+- uma única resolução;
+- quantidade fixa de colunas;
+- interações acessíveis somente por hover.
+
+Preferir, quando aplicável:
+
+- layouts fluidos;
+- flex;
+- grid;
+- dimensões relativas;
+- componentes adaptativos;
+- conteúdo orientado por prioridade;
+- progressive disclosure.
+
+Como smartphones e tablets fazem parte dos dispositivos-alvo, também deverão ser considerados:
+
+- alvos de toque adequados;
+- espaçamento entre ações;
+- ausência de funções exclusivamente por hover;
+- feedback visual ao toque;
+- controles apropriados para mobile;
+- menus utilizáveis sem cursor.
+
+## AXI.25 Performance móvel
+
+Responsividade inclui capacidade de utilização em dispositivos menos potentes e conexões menos estáveis.
+
+Ao longo do projeto deverão ser observados:
+
+- tamanho de assets;
+- quantidade de dados carregados;
+- paginação;
+- lazy loading quando apropriado;
+- chamadas desnecessárias;
+- renderizações excessivas;
+- peso de bibliotecas;
+- carregamento de imagens;
+- comportamento em conexões lentas.
+
+A Fase 17 poderá aprofundar a otimização, mas decisões que prejudiquem severamente dispositivos móveis devem ser evitadas desde o início.
+
+## AXI.26 Critério adicional de conclusão responsiva
+
+Para capacidades destinadas à interação humana, a validação vertical deverá incluir, quando aplicável:
+
+```text
+Viewport móvel
++
+Viewport desktop
+```
+
+Não é necessário pixel perfection durante as fases iniciais.
+
+É necessária **usabilidade real**.
+
+## AXI.27 Distribuição por fases
+
+| Item | Fases |
+|---|---|
+| Frontend funcional inicial | 1 |
+| Interface de autenticação e autorização | 2 |
+| Interfaces mínimas dos domínios operacionais | 3–16, 18–21 conforme a capacidade |
+| Responsividade funcional | 1–16, 18–21 |
+| Validação mobile + desktop | 1–16, 18–21 quando houver UI |
+| Uso real e feedback iterativo | 1–21 |
+| Evolução progressiva para Workspaces | 3, 5, 7, 10, 13–17 |
+| Actionable UI progressiva | 3, 9, 13–17 |
+| Inteligência progressiva na interface | 9–17 |
+| Design system definitivo | 17 |
+| UX avançada e consolidação | 17 |
+| Acessibilidade aprofundada | 17, mantida depois |
+| Refinamento responsivo avançado | 17, mantido depois |
+| Performance percebida e consistência global | 17, mantidas depois |
+
+## AXI.28 Decisão arquitetural
+
+Fica estabelecido que:
+
+> **O Versa será desenvolvido como produto utilizável desde as fases iniciais. Backend, domínio, dados e frontend deverão evoluir de forma incremental e coordenada por meio de fatias verticais. O frontend inicial priorizará funcionalidade, clareza, validação operacional e responsividade funcional. Responsividade será tratada como requisito arquitetural transversal. Feedback de uso real e feedback direto do responsável pelo produto serão incorporados iterativamente. O refinamento visual, responsivo e de experiência em nível definitivo permanecerá concentrado na Fase 17 — Frontend Refinement & Experience Consolidation.**
+
+Assim:
+
+```text
+Frontend funcional
++
+Responsividade funcional
+        ↓
+Evolução contínua
+        ↓
+Uso real + feedback
+        ↓
+Frontend Refinement & Experience Consolidation
+        ↓
+UX, responsividade e consistência refinadas
+```
+
+O objetivo final é que o Versa não apenas se adapte visualmente a telas menores, mas mantenha uma experiência operacional coerente independentemente do dispositivo utilizado.
+
+---
+
+# Anexo XII — Media Library, Análises Assíncronas e Agenda Operacional
+
+> Este anexo estabelece três capacidades transversais: **ativos de mídia reutilizáveis e acessíveis por agentes**, **trabalhos analíticos assíncronos solicitáveis pelo usuário** e **agenda operacional humana integrada aos domínios da Versa**.
+
+## AXII.1 Objetivo
+
+A Versa deverá permitir que informação, mídia e trabalho operacional circulem entre domínios sem criar vínculos artificiais ou bloquear a experiência do usuário.
+
+Três princípios passam a ser oficiais:
+
+```text
+Ativo de mídia
+≠ arquivo pertencente a um único produto
+```
+
+```text
+Análise demorada
+≠ requisição HTTP bloqueada até o fim
+```
+
+```text
+Agenda operacional
+≠ calendário decorativo
+```
+
+A plataforma deverá representar esses conceitos como capacidades reutilizáveis, auditáveis e integráveis.
+
+## AXII.2 Media Library como capacidade transversal
+
+Fotos, vídeos e outros materiais passam a ser tratados como ativos reutilizáveis da empresa.
+
+Entidade conceitual:
+
+```text
+MediaAsset
+├── id
+├── tenant_id
+├── media_type
+├── storage_reference
+├── original_filename
+├── title
+├── description
+├── metadata
+├── tags
+├── source
+├── status
+├── created_at
+├── updated_at
+└── audit
+```
+
+A referência de armazenamento deverá permanecer separada das relações de negócio.
+
+## AXII.3 Relação muitos-para-muitos
+
+Um ativo poderá estar relacionado a múltiplas entidades simultaneamente.
+
+```text
+MediaAsset
+├── Product A
+├── Product B
+├── Product C
+├── Campaign X
+├── Post Y
+└── Strategy Z
+```
+
+Exemplo real:
+
+```text
+Vídeo com três blusas
+        ↓
+MediaAsset #82
+├── Ribana Preta
+├── Ribana Branca
+└── Ribana Bege
+```
+
+Não será necessário duplicar o arquivo para criar cada vínculo.
+
+As relações deverão ser representadas de forma explícita e auditável.
+
+## AXII.4 Galeria de ativos
+
+A plataforma possuirá uma interface de Galeria / Media Library.
+
+Filtros possíveis:
+
+- tipo de mídia;
+- produto;
+- múltiplos produtos;
+- campanha;
+- post;
+- estratégia;
+- tag;
+- origem;
+- data de upload;
+- período de utilização;
+- usado / não usado;
+- status;
+- formato ou orientação quando disponível.
+
+A galeria deverá permitir visualizar rapidamente:
+
+- miniatura ou preview;
+- título;
+- produtos relacionados;
+- campanhas relacionadas;
+- tags;
+- data;
+- histórico de uso;
+- ações permitidas.
+
+## AXII.5 Histórico de utilização do ativo
+
+O uso do ativo deverá gerar histórico.
+
+```text
+MediaUsage
+├── media_asset_id
+├── entity_type
+├── entity_id
+├── purpose
+├── actor_type
+├── actor_id
+├── used_at
+└── context
+```
+
+Isso permitirá responder futuramente:
+
+- onde esta foto já foi utilizada?
+- em quais campanhas este vídeo apareceu?
+- quais produtos estavam associados?
+- qual ativo foi usado em determinado post?
+- quais ativos aparecem com frequência em campanhas de melhor desempenho?
+
+Correlação de desempenho não implica automaticamente causalidade.
+
+## AXII.6 Acesso da Media Library pelos agentes
+
+Agentes autorizados poderão acessar diretamente a biblioteca de ativos.
+
+Exemplo:
+
+```text
+Planejamento semanal solicitado
+        ↓
+Agente de Social Media
+        ↓
+consulta produtos disponíveis
+        ↓
+consulta Media Library
+        ↓
+seleciona ativos adequados
+        ↓
+monta plano de posts
+        ↓
+associa foto/vídeo a cada publicação
+        ↓
+gera textos
+```
+
+O usuário não deverá precisar reenviar manualmente as mesmas imagens toda vez que solicitar um novo planejamento.
+
+Acesso deverá respeitar:
+
+- tenant;
+- permissões;
+- escopo do agente;
+- status do ativo;
+- políticas de uso;
+- auditoria.
+
+O agente poderá utilizar os ativos disponíveis livremente **dentro do escopo autorizado**, inclusive combinando um mesmo ativo com diferentes produtos, posts e campanhas quando isso fizer sentido.
+
+## AXII.7 Agentes e seleção de ativos
+
+A seleção feita pelo agente deverá ser observável.
+
+Quando aplicável, registrar:
+
+```text
+agent_id
+media_asset_id
+reason_summary
+post_id / campaign_id / strategy_id
+execution_id
+created_at
+```
+
+Não é necessário armazenar cadeia de pensamento privada. A justificativa deverá ser um resumo operacional apropriado para auditoria.
+
+## AXII.8 Evolução da inteligência visual
+
+A Media Library não depende de visão computacional para existir.
+
+Estágio inicial:
+
+```text
+arquivo
++ metadados
++ tags
++ vínculos fornecidos pelo usuário
+```
+
+Estágio posterior, se houver benefício real:
+
+```text
+arquivo
++ extração visual
++ classificação
++ embeddings multimodais
++ busca semântica
++ detecção de elementos
+```
+
+A introdução de IA visual deverá obedecer às mesmas regras de custo, privacidade, necessidade e rastreabilidade das outras capacidades de IA.
+
+## AXII.9 Comparison Lab
+
+A Versa deverá possuir uma interface dedicada à comparação exploratória de dados.
+
+O usuário poderá montar comparações combinando dimensões.
+
+Exemplos:
+
+```text
+Janeiro x Fevereiro
+```
+
+```text
+Produto A x Produto B
+```
+
+```text
+Campanha A x Campanha B
+```
+
+```text
+Janeiro
++ Ribana Preta
++ Bairro A
+
+versus
+
+Fevereiro
++ Ribana Branca
++ Bairro B
+```
+
+Também deverão ser possíveis comparações de várias entidades dentro do mesmo recorte.
+
+## AXII.10 Dimensões de comparação
+
+Dimensões poderão incluir, conforme os respectivos dados existirem:
+
+- período;
+- produto;
+- variante;
+- categoria;
+- campanha;
+- estratégia;
+- canal;
+- cliente;
+- cohort;
+- bairro;
+- cidade;
+- região;
+- fornecedor;
+- preço;
+- promoção;
+- mídia utilizada;
+- estoque;
+- margem;
+- vendas;
+- horário;
+- dia da semana;
+- outras dimensões derivadas dos read models analíticos.
+
+A interface deverá deixar claro quais filtros estão sendo comparados.
+
+## AXII.11 Analysis Request
+
+Análises que possam demorar não deverão manter o usuário preso à tela esperando uma única requisição terminar.
+
+Será criada a entidade conceitual `AnalysisRequest`.
+
+```text
+AnalysisRequest
+├── id
+├── tenant_id
+├── requested_by
+├── analysis_type
+├── parameters
+├── status
+├── progress
+├── requested_at
+├── started_at
+├── completed_at
+├── failed_at
+├── result_reference
+├── error_summary
+├── correlation_id
+└── audit
+```
+
+Estados iniciais:
+
+```text
+queued
+running
+completed
+failed
+cancelled
+```
+
+## AXII.12 Experiência de trabalho solicitado
+
+O sistema deverá poder funcionar, em determinadas capacidades, como um funcionário que recebe uma tarefa e devolve o resultado depois.
+
+Fluxo:
+
+```text
+Usuário solicita análise
+        ↓
+Versa registra AnalysisRequest
+        ↓
+responde imediatamente
+"Análise solicitada"
+        ↓
+usuário continua trabalhando
+        ↓
+job executa em background
+        ↓
+resultado é persistido
+        ↓
+notificação
+"Sua análise está pronta"
+        ↓
+usuário abre o resultado
+```
+
+A interface não deverá ficar bloqueada durante todo o processamento.
+
+## AXII.13 Background Job Engine
+
+A infraestrutura utilizada por `AnalysisRequest` deverá ser generalizável para outros trabalhos demorados.
+
+Exemplos:
+
+- análises complexas;
+- relatórios extensos;
+- exportações;
+- importações;
+- forecasting;
+- reconstrução de projeções;
+- sincronizações;
+- simulações;
+- processamento de grandes datasets;
+- tarefas de IA de maior latência.
+
+O Background Job Engine deverá possuir, quando aplicável:
+
+- fila;
+- prioridade;
+- status;
+- tentativas;
+- retry;
+- timeout;
+- cancelamento;
+- progresso;
+- timestamps;
+- logs;
+- correlação;
+- resultado persistido;
+- falha persistida;
+- notificação;
+- métricas;
+- auditoria.
+
+## AXII.14 Outbox não é Background Job
+
+A plataforma deverá preservar a distinção:
+
+```text
+Transactional Outbox
+→ garantir publicação/processamento de fatos de domínio
+```
+
+```text
+Background Job
+→ executar um trabalho solicitado, agendado ou demorado
+```
+
+Um mesmo fluxo poderá utilizar ambos, mas não deverão ser tratados como a mesma abstração.
+
+## AXII.15 Pipeline de análise
+
+A análise deverá preferir esta ordem:
+
+```text
+Dados confiáveis
+      ↓
+SQL / read models
+      ↓
+regras e agregações
+      ↓
+estatística / ML quando necessário
+      ↓
+resultado estruturado
+      ↓
+evidências + limitações
+      ↓
+LLM, somente quando útil
+      ↓
+explicação em linguagem natural
+```
+
+A LLM não será responsável por inventar os números da análise.
+
+Ela poderá explicar:
+
+- diferenças;
+- padrões;
+- possíveis causas;
+- limitações;
+- hipóteses;
+- resumo executivo;
+- próximos pontos a investigar.
+
+Hipóteses deverão ser apresentadas como hipóteses quando causalidade não estiver demonstrada.
+
+## AXII.16 Exemplo — análise solicitada
+
+Solicitação:
+
+> Comparar o primeiro semestre do ano entre três modelos de blusa em cada bairro da cidade e explicar as principais diferenças.
+
+Fluxo possível:
+
+```text
+AnalysisRequest
+      ↓
+resolver período
+      ↓
+resolver produtos
+      ↓
+agrupar vendas por bairro
+      ↓
+calcular receita, unidades, margem e variações
+      ↓
+identificar outliers e diferenças relevantes
+      ↓
+montar EvidenceSet
+      ↓
+LLM recebe resumo estruturado
+      ↓
+explicação textual
+      ↓
+resultado salvo
+      ↓
+notificação ao usuário
+```
+
+## AXII.17 Reprodutibilidade e evidências
+
+Uma análise concluída deverá poder registrar:
+
+- parâmetros utilizados;
+- período;
+- filtros;
+- versão das regras;
+- dataset ou referência aos dados utilizados quando necessário;
+- métricas calculadas;
+- evidências;
+- limitações;
+- modelo estatístico, quando houver;
+- LLM/modelo utilizado, quando houver;
+- custo de IA;
+- timestamps;
+- versão do resultado.
+
+O objetivo é permitir explicar posteriormente **como aquele relatório foi produzido**.
+
+## AXII.18 Central de Análises
+
+A interface poderá possuir uma central de trabalhos analíticos.
+
+Exemplo:
+
+```text
+Minhas análises
+
+[Executando] Comparativo 1º semestre por bairro      68%
+[Concluída] Produtos x campanhas — julho
+[Falhou]    Forecast de estoque — dataset incompleto
+[Concluída] Margem por canal — últimos 90 dias
+```
+
+Ações possíveis:
+
+- abrir resultado;
+- cancelar quando permitido;
+- repetir;
+- duplicar parâmetros;
+- comparar resultado anterior;
+- arquivar;
+- compartilhar internamente;
+- visualizar evidências;
+- visualizar custo e duração quando aplicável.
+
+## AXII.19 Notificações de trabalho concluído
+
+Jobs relevantes poderão gerar notificações internas.
+
+Exemplo:
+
+```text
+🔔 Análise concluída
+Comparativo do primeiro semestre por bairro está pronto.
+[Ver análise]
+```
+
+Canais externos poderão ser adicionados posteriormente pela Integration Platform.
+
+A notificação não substituirá o histórico persistido do job.
+
+## AXII.20 Agenda Operacional
+
+A Versa deverá possuir uma agenda voltada à execução do trabalho humano.
+
+Ela poderá conter:
+
+- posts;
+- campanhas;
+- revisões;
+- compras;
+- conferências;
+- tarefas de estoque;
+- follow-ups;
+- tarefas financeiras;
+- tarefas de atendimento;
+- decisões pendentes;
+- atividades livres cadastradas pelo usuário.
+
+Visões:
+
+```text
+Dia
+Semana
+Mês
+```
+
+## AXII.21 OperationalTask
+
+Entidade conceitual:
+
+```text
+OperationalTask
+├── id
+├── tenant_id
+├── title
+├── description
+├── status
+├── priority
+├── scheduled_for
+├── due_at
+├── assigned_to
+├── source_type
+├── source_id
+├── created_by
+├── completed_at
+├── postponed_at
+├── cancelled_at
+├── created_at
+├── updated_at
+└── audit
+```
+
+## AXII.22 Estados da tarefa
+
+Estados iniciais:
+
+```text
+planned
+in_progress
+completed
+postponed
+cancelled
+```
+
+Uma tarefa adiada deverá preservar:
+
+```text
+data original
+nova data
+motivo do adiamento
+quem adiou
+quando adiou
+```
+
+O adiamento não deverá apagar o planejamento anterior.
+
+## AXII.23 Vínculos com o restante da plataforma
+
+Uma tarefa poderá estar vinculada a entidades relevantes.
+
+```text
+OperationalTask
+├── Product
+├── Campaign
+├── Strategy
+├── MediaAsset
+├── Customer
+├── Supplier
+├── Order
+├── AnalysisRequest
+└── Automation
+```
+
+Exemplo:
+
+```text
+Tarefa
+"Publicar Ribana Preta às 19h"
+
+├── Product: Ribana Preta
+├── MediaAsset: Foto #77
+├── Campaign: Básicas Agosto
+└── Strategy: Crescimento Local
+```
+
+## AXII.24 Agenda de conteúdo
+
+O planejamento semanal de posts poderá gerar tarefas diretamente na agenda.
+
+```text
+Planejamento semanal
+        ↓
+Segunda — Post A
+Terça — Story B
+Quarta — Post C
+        ↓
+OperationalTasks
+        ↓
+Agenda semanal
+```
+
+Cada tarefa poderá conter:
+
+- texto planejado;
+- ativo de mídia;
+- produtos relacionados;
+- canal;
+- horário;
+- campanha;
+- estratégia;
+- status de execução.
+
+## AXII.25 Feedback de execução
+
+Concluir, adiar ou cancelar tarefas gera fatos operacionais úteis.
+
+Exemplos futuros:
+
+- tarefas frequentemente adiadas;
+- dias da semana com maior taxa de conclusão;
+- tipo de tarefa que mais acumula atraso;
+- campanhas cuja execução planejada não foi cumprida;
+- diferença entre plano e execução real.
+
+Esses dados poderão alimentar analytics e Decision Profile dentro dos limites já estabelecidos no roadmap.
+
+## AXII.26 Agenda humana versus Intelligence Scheduler
+
+São conceitos relacionados, mas distintos.
+
+```text
+Agenda Operacional
+→ trabalho humano e planejamento operacional
+```
+
+```text
+Intelligence Scheduler
+→ execução de agentes, análises e automações
+```
+
+Integrações possíveis:
+
+```text
+Tarefa humana concluída
+→ dispara automação autorizada
+```
+
+```text
+Análise agendada concluída
+→ cria tarefa humana de revisão
+```
+
+Essas ligações deverão ser explícitas, configuráveis e auditáveis.
+
+## AXII.27 Integração com calendários externos
+
+A Agenda Operacional deverá possuir arquitetura preparada para integração futura com provedores externos.
+
+Exemplos:
+
+- Google Calendar;
+- Microsoft Outlook Calendar;
+- outros providers suportados pela Integration Platform.
+
+A integração deverá definir:
+
+- direção da sincronização;
+- origem da verdade;
+- tratamento de conflitos;
+- criação e atualização;
+- remoção;
+- timezone;
+- recorrência;
+- permissões;
+- auditoria.
+
+A Agenda da Versa continua sendo uma entidade do produto; integração externa não deverá obrigar a plataforma a depender de um provider específico.
+
+## AXII.28 Interface e responsividade
+
+Media Library, Comparison Lab, Central de Análises e Agenda Operacional deverão seguir o Anexo XI.
+
+Responsividade funcional é obrigatória desde a primeira versão.
+
+Exemplos:
+
+```text
+Galeria desktop
+→ grid amplo + filtros laterais
+
+Galeria mobile
+→ grid/lista compacta + filtros em drawer
+```
+
+```text
+Comparison Lab desktop
+→ múltiplas dimensões lado a lado
+
+Comparison Lab mobile
+→ configuração progressiva + resumo priorizado
+```
+
+```text
+Agenda desktop
+→ semana/mês densos
+
+Agenda mobile
+→ foco em dia/lista + navegação temporal simples
+```
+
+Interfaces densas não deverão ser apenas comprimidas.
+
+## AXII.29 Segurança, autorização e auditoria
+
+Essas capacidades deverão respeitar:
+
+- tenant isolation;
+- RBAC;
+- escopo de agentes;
+- permissões sobre mídia;
+- permissões para solicitar análises;
+- permissões para cancelar jobs;
+- auditoria de tarefas;
+- auditoria de utilização de ativos;
+- auditoria de resultados e notificações;
+- políticas de retenção;
+- privacidade.
+
+## AXII.30 Distribuição por fases
+
+### Fase 3
+
+- fundação de `MediaAsset`;
+- vínculo de mídia com múltiplos produtos;
+- galeria básica;
+- filtros essenciais;
+- histórico inicial de uso.
+
+### Fase 9
+
+- Comparison Lab inicial;
+- comparações entre períodos, produtos, campanhas e dimensões disponíveis;
+- `AnalysisRequest`;
+- primeira experiência de solicitação assíncrona;
+- Central de Análises inicial;
+- notificações internas de conclusão.
+
+### Fase 10
+
+- Media Library integrada a Marketing, Campaign e Strategy;
+- agentes de Marketing/Social Media consultando a galeria;
+- ativos vinculados a posts e campanhas;
+- agenda semanal de conteúdo;
+- tarefas de publicação e revisão.
+
+### Fase 12
+
+- análises multidimensionais avançadas;
+- estatística e ML dentro dos trabalhos analíticos;
+- evidências estruturadas;
+- explicação por LLM após cálculo dos resultados;
+- análises por regiões, bairros, cohorts e combinações complexas.
+
+### Fase 15
+
+- agentes acessando Media Library como ferramenta;
+- agentes solicitando ou participando de trabalhos assíncronos autorizados;
+- síntese e explicação dos resultados;
+- governança e auditoria do uso de ativos pelos agentes.
+
+### Fase 16
+
+- consolidação do Background Job Engine;
+- retries, prioridade, cancelamento, progresso e observabilidade;
+- Agenda Operacional generalizada para outros domínios;
+- integração entre tarefas humanas, automações, análises e notificações;
+- regras explícitas entre Agenda Operacional e Intelligence Scheduler.
+
+### Fase 17
+
+- refinamento avançado de Gallery, Comparison Lab, Central de Análises e Agenda;
+- UX de filtros, drag/drop quando justificar, densidade, acessibilidade e responsividade avançada.
+
+### Fase 18
+
+- sincronização opcional com calendários externos;
+- canais externos de notificação;
+- storage/providers externos quando aplicável;
+- integrações de mídia e publicação conforme APIs oficiais disponíveis.
+
+### Fase 19
+
+- métricas de jobs;
+- tracing;
+- alertas de backlog;
+- auditoria aprofundada;
+- políticas de retenção e privacidade dos ativos/resultados.
+
+## AXII.31 Decisão arquitetural
+
+Fica estabelecido que:
+
+> **Fotos, vídeos e outros ativos da Versa serão tratados como recursos reutilizáveis da empresa, capazes de se relacionar com múltiplos produtos, campanhas, posts e estratégias. Agentes autorizados poderão acessar diretamente essa Media Library e utilizar seus ativos no planejamento e execução de conteúdo dentro de seu escopo, preservando histórico e auditoria.**
+
+> **Análises e outros trabalhos que possam demandar processamento relevante serão modelados como trabalhos assíncronos. O usuário poderá solicitar uma análise, continuar operando a plataforma e ser notificado quando o resultado estiver pronto. Dados e métricas serão calculados por SQL, regras, estatística ou ML antes de eventual uso de LLM para síntese e explicação em linguagem natural.**
+
+> **A Versa possuirá uma Agenda Operacional para organizar trabalho humano em visões de dia, semana e mês. Tarefas poderão ser concluídas, adiadas ou canceladas com histórico e justificativa, relacionar-se a entidades do negócio e integrar-se futuramente a calendários externos sem transformar um provider externo em dependência da plataforma.**
 
