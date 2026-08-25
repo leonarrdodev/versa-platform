@@ -1,4 +1,8 @@
 import {
+  createDatabasePool,
+} from '@versa/database';
+
+import {
   PerformanceMonotonicClock,
   StructuredLogger,
   jsonConsoleSink,
@@ -17,11 +21,27 @@ import {
 } from './composition/catalog.js';
 
 import {
+  createIdentityComposition,
+} from './composition/identity.js';
+
+import {
   env,
 } from './config/env.js';
 
+const pool =
+  createDatabasePool(
+    env.database,
+  );
+
 const catalog =
-  createCatalogComposition();
+  createCatalogComposition(
+    pool,
+  );
+
+const identity =
+  createIdentityComposition(
+    pool,
+  );
 
 const systemClock =
   new SystemClock();
@@ -36,43 +56,64 @@ const logger =
     jsonConsoleSink,
   );
 
-const app = buildApp({
-  applicationLogger:
-  logger,
+const app =
+  buildApp({
+    applicationLogger:
+      logger,
 
-  catalog: {
-     createProductHandler:
-    catalog.createProductHandler,
+    catalog: {
+      createProductHandler:
+        catalog.createProductHandler,
 
-  getProductByIdHandler:
-    catalog.getProductByIdHandler,
+      getProductByIdHandler:
+        catalog.getProductByIdHandler,
 
-  getProductsHandler:
-    catalog.getProductsHandler,
+      getProductsHandler:
+        catalog.getProductsHandler,
 
-  idGenerator:
-    catalog.idGenerator,
+      idGenerator:
+        catalog.idGenerator,
 
-  logger,
+      logger,
 
-  monotonicClock,
-  },
-});
+      monotonicClock,
+    },
+
+    identity: {
+  signInHandler:
+    identity.signInHandler,
+
+  resolveSessionHandler:
+    identity.resolveSessionHandler,
+
+  revokeSessionHandler:
+    identity.revokeSessionHandler,
+
+  secureCookies:
+    env.nodeEnv ===
+      'production',
+},
+  });
 
 app.addHook(
   'onClose',
   async () => {
-    await catalog.close();
+    await pool.end();
   },
 );
 
 try {
   await app.listen({
-    host: env.api.host,
-    port: env.api.port,
+    host:
+      env.api.host,
+
+    port:
+      env.api.port,
   });
 } catch (error) {
-  app.log.error(error);
+  app.log.error(
+    error,
+  );
 
   await app.close();
 

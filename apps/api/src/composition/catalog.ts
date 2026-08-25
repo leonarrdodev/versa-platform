@@ -19,9 +19,10 @@ import type {
   IdGenerator,
 } from '@versa/shared-kernel';
 
-import {
-  env,
-} from '../config/env.js';
+type DatabasePool =
+  ReturnType<
+    typeof createDatabasePool
+  >;
 
 export interface CatalogComposition {
   readonly createProductHandler:
@@ -35,17 +36,11 @@ export interface CatalogComposition {
 
   readonly idGenerator:
     IdGenerator;
-
-  close(): Promise<void>;
 }
 
-export function createCatalogComposition():
-CatalogComposition {
-  const pool =
-    createDatabasePool(
-      env.database,
-    );
-
+export function createCatalogComposition(
+  pool: DatabasePool,
+): CatalogComposition {
   const clock =
     new SystemClock();
 
@@ -84,10 +79,5 @@ CatalogComposition {
     getProductByIdHandler,
     getProductsHandler,
     idGenerator,
-
-    async close():
-    Promise<void> {
-      await pool.end();
-    },
   };
 }

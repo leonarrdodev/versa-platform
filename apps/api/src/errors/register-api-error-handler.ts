@@ -1,4 +1,9 @@
 import {
+  InvalidCredentialsError,
+  InvalidSessionError,
+} from '@versa/identity';
+
+import {
   ProductSkuAlreadyExistsError,
 } from '@versa/catalog';
 
@@ -83,6 +88,36 @@ export function registerApiErrorHandler(
               'Já existe um produto com este SKU.',
           });
       }
+
+      if (
+  error instanceof
+  InvalidCredentialsError
+) {
+  return reply
+    .code(401)
+    .send({
+      code:
+        'INVALID_CREDENTIALS',
+
+      message:
+        'E-mail ou senha inválidos.',
+    });
+}
+
+if (
+  error instanceof
+  InvalidSessionError
+) {
+  return reply
+    .code(401)
+    .send({
+      code:
+        'INVALID_SESSION',
+
+      message:
+        'Sessão inválida ou expirada.',
+    });
+}
 
       logger?.error({
         message:

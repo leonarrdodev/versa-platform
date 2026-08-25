@@ -1,3 +1,5 @@
+import cookie from '@fastify/cookie';
+
 import type {
   Logger,
 } from '@versa/observability';
@@ -9,6 +11,14 @@ import Fastify, {
 import {
   registerApiErrorHandler,
 } from './errors/register-api-error-handler.js';
+
+import {
+  createAuthRoute,
+} from './routes/auth.route.js';
+
+import type {
+  AuthRouteDependencies,
+} from './routes/auth.route.js';
 
 import {
   healthRoute,
@@ -23,25 +33,41 @@ import type {
 } from './routes/products.route.js';
 
 interface BuildAppOptions {
-  logger?: boolean;
+  logger?:
+    boolean;
 
-  applicationLogger?: Logger;
+  applicationLogger?:
+    Logger;
 
   catalog?:
     ProductsRouteDependencies;
+
+  identity?:
+    AuthRouteDependencies;
 }
 
 export function buildApp(
-  options: BuildAppOptions = {},
+  options:
+    BuildAppOptions = {},
 ): FastifyInstance {
-  const app = Fastify({
-    logger:
-      options.logger ?? true,
-  });
+  const app =
+    Fastify({
+      logger:
+        options.logger ?? true,
+    });
 
   registerApiErrorHandler(
     app,
     options.applicationLogger,
+  );
+
+  /*
+   * Cookie parsing/decorators precisam
+   * estar disponíveis antes das rotas
+   * de autenticação.
+   */
+  app.register(
+    cookie,
   );
 
   app.register(
@@ -49,11 +75,23 @@ export function buildApp(
   );
 
   if (
-    options.catalog !== undefined
+    options.catalog !==
+    undefined
   ) {
     app.register(
       createProductsRoute(
         options.catalog,
+      ),
+    );
+  }
+
+  if (
+    options.identity !==
+    undefined
+  ) {
+    app.register(
+      createAuthRoute(
+        options.identity,
       ),
     );
   }

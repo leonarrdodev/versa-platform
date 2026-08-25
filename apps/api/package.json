@@ -12,11 +12,13 @@
     "db:check": "tsx src/database-check.ts",
     "db:migrate": "tsx src/database-migrate.ts",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
-"typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit"
+    "typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.1.2",
     "@versa/catalog": "workspace:*",
     "@versa/database": "workspace:*",
+    "@versa/identity": "workspace:*",
     "@versa/observability": "workspace:*",
     "@versa/shared-kernel": "workspace:*",
     "fastify": "^5.11.0"
