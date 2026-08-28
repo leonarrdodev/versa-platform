@@ -8,8 +8,9 @@ import type {
   FastifyPluginAsync,
 } from 'fastify';
 
-const SESSION_COOKIE_NAME =
-  'versa_session';
+import {
+  SESSION_COOKIE_NAME,
+} from '../auth/session-cookie.js';
 
 interface LoginBody {
   readonly email:

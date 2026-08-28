@@ -21,10 +21,13 @@ import type {
   FastifyPluginAsync,
 } from 'fastify';
 
-interface ProductHeaders {
-  readonly 'x-tenant-id':
-    string;
-}
+import {
+  getRequiredActiveTenantId,
+} from '../auth/get-required-active-tenant-id.js';
+
+import type {
+  RequireAuthentication,
+} from '../auth/require-authentication.js';
 
 interface CreateProductBody {
   readonly sku:
@@ -68,6 +71,9 @@ export interface ProductsRouteDependencies {
 
   readonly monotonicClock:
     MonotonicClock;
+
+  readonly requireAuthentication:
+    RequireAuthentication;
 }
 
 export function createProductsRoute(
@@ -80,29 +86,14 @@ export function createProductsRoute(
     app.post<{
       Body:
         CreateProductBody;
-
-      Headers:
-        ProductHeaders;
     }>(
       '/products',
       {
+        preHandler:
+          dependencies
+            .requireAuthentication,
+
         schema: {
-          headers: {
-            type:
-              'object',
-
-            required: [
-              'x-tenant-id',
-            ],
-
-            properties: {
-              'x-tenant-id': {
-                type:
-                  'string',
-              },
-            },
-          },
-
           body: {
             type:
               'object',
@@ -140,6 +131,11 @@ export function createProductsRoute(
         request,
         reply,
       ) => {
+        const tenantId =
+          getRequiredActiveTenantId(
+            request,
+          );
+
         const executionContext =
           createRootExecutionContext(
             dependencies.idGenerator,
@@ -161,10 +157,7 @@ export function createProductsRoute(
             executionContext,
 
           data: {
-            tenantId:
-              request.headers[
-                'x-tenant-id'
-              ],
+            tenantId,
 
             sku:
               request.body.sku,
@@ -177,10 +170,7 @@ export function createProductsRoute(
               .createProductHandler
               .execute(
                 {
-                  tenantId:
-                    request.headers[
-                      'x-tenant-id'
-                    ],
+                  tenantId,
 
                   sku:
                     request.body.sku,
@@ -251,10 +241,7 @@ export function createProductsRoute(
             error,
 
             data: {
-              tenantId:
-                request.headers[
-                  'x-tenant-id'
-                ],
+              tenantId,
 
               sku:
                 request.body.sku,
@@ -271,31 +258,16 @@ export function createProductsRoute(
      * já disponíveis no read model.
      */
     app.get<{
-      Headers:
-        ProductHeaders;
-
       Querystring:
         GetProductsQuerystring;
     }>(
       '/products',
       {
+        preHandler:
+          dependencies
+            .requireAuthentication,
+
         schema: {
-          headers: {
-            type:
-              'object',
-
-            required: [
-              'x-tenant-id',
-            ],
-
-            properties: {
-              'x-tenant-id': {
-                type:
-                  'string',
-              },
-            },
-          },
-
           querystring: {
             type:
               'object',
@@ -331,14 +303,16 @@ export function createProductsRoute(
         request,
         reply,
       ) => {
+        const tenantId =
+          getRequiredActiveTenantId(
+            request,
+          );
+
         const result =
           await dependencies
             .getProductsHandler
             .execute({
-              tenantId:
-                request.headers[
-                  'x-tenant-id'
-                ],
+              tenantId,
 
               ...(request.query.limit ===
               undefined
@@ -366,29 +340,14 @@ export function createProductsRoute(
     app.get<{
       Params:
         GetProductParams;
-
-      Headers:
-        ProductHeaders;
     }>(
       '/products/:id',
       {
+        preHandler:
+          dependencies
+            .requireAuthentication,
+
         schema: {
-          headers: {
-            type:
-              'object',
-
-            required: [
-              'x-tenant-id',
-            ],
-
-            properties: {
-              'x-tenant-id': {
-                type:
-                  'string',
-              },
-            },
-          },
-
           params: {
             type:
               'object',
@@ -411,14 +370,16 @@ export function createProductsRoute(
         request,
         reply,
       ) => {
+        const tenantId =
+          getRequiredActiveTenantId(
+            request,
+          );
+
         const product =
           await dependencies
             .getProductByIdHandler
             .execute({
-              tenantId:
-                request.headers[
-                  'x-tenant-id'
-                ],
+              tenantId,
 
               productId:
                 request.params.id,

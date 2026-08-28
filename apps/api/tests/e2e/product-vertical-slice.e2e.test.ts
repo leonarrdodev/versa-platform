@@ -40,16 +40,29 @@ import {
 } from 'vitest';
 
 import {
+  processNextOutboxEvent,
+} from '../../../worker/src/outbox/process-next-outbox-event.js';
+
+import {
   buildApp,
 } from '../../src/app.js';
+
+import {
+  createIdentityComposition,
+} from '../../src/composition/identity.js';
 
 import {
   env,
 } from '../../src/config/env.js';
 
 import {
-  processNextOutboxEvent,
-} from '../../../worker/src/outbox/process-next-outbox-event.js';
+  cleanupAuthenticatedIdentity,
+  createAuthenticatedIdentity,
+} from './helpers/authenticated-identity.js';
+
+import type {
+  AuthenticatedIdentity,
+} from './helpers/authenticated-identity.js';
 
 const logger:
 Logger = {
@@ -128,27 +141,47 @@ beforeAll(
         productReadRepository,
       );
 
-    app = buildApp({
-      logger:
-        false,
+    const identity =
+      createIdentityComposition(
+        pool,
+      );
 
-      applicationLogger:
-        logger,
+    app =
+      buildApp({
+        logger:
+          false,
 
-      catalog: {
-        createProductHandler,
+        applicationLogger:
+          logger,
 
-        getProductByIdHandler,
+        catalog: {
+          createProductHandler,
 
-        getProductsHandler,
+          getProductByIdHandler,
 
-        idGenerator,
+          getProductsHandler,
 
-        logger,
+          idGenerator,
 
-        monotonicClock,
-      },
-    });
+          logger,
+
+          monotonicClock,
+        },
+
+        identity: {
+          signInHandler:
+            identity.signInHandler,
+
+          resolveSessionHandler:
+            identity.resolveSessionHandler,
+
+          revokeSessionHandler:
+            identity.revokeSessionHandler,
+
+          secureCookies:
+            false,
+        },
+      });
 
     await app.ready();
   },
@@ -166,11 +199,8 @@ describe(
   'Product vertical slice',
   () => {
     it(
-      'creates, projects, reads and lists a product',
+      'creates, projects, reads and lists a product using the authenticated tenant',
       async () => {
-        const tenantId =
-          randomUUID();
-
         const categoryId =
           randomUUID();
 
@@ -180,9 +210,54 @@ describe(
         const expectedSku =
           sku.toUpperCase();
 
+        let identityA:
+          AuthenticatedIdentity | null =
+            null;
+
+        let identityB:
+          AuthenticatedIdentity | null =
+            null;
+
+        let tenantId:
+          string | null =
+            null;
+
         try {
           /*
-           * 1. Cria o produto pela API.
+           * Cria duas identidades reais,
+           * cada uma pertencente a um
+           * tenant diferente.
+           */
+          identityA =
+            await createAuthenticatedIdentity({
+              app,
+
+              pool,
+
+              prefix:
+                'product-a',
+            });
+
+          identityB =
+            await createAuthenticatedIdentity({
+              app,
+
+              pool,
+
+              prefix:
+                'product-b',
+            });
+
+          tenantId =
+            identityA.tenantId;
+
+          /*
+           * 1. Cria o produto pela API
+           * usando somente o cookie
+           * autenticado.
+           *
+           * O tenant não é enviado
+           * pelo cliente.
            */
           const postResponse =
             await app.inject({
@@ -193,8 +268,8 @@ describe(
                 '/products',
 
               headers: {
-                'x-tenant-id':
-                  tenantId,
+                cookie:
+                  identityA.cookie,
               },
 
               payload: {
@@ -226,10 +301,15 @@ describe(
                 string;
             }>();
 
+          /*
+           * O tenant persistido deve ser
+           * exatamente o tenant resolvido
+           * pela Session A.
+           */
           expect(
             created.tenantId,
           ).toBe(
-            tenantId,
+            identityA.tenantId,
           );
 
           expect(
@@ -279,7 +359,7 @@ describe(
                 LIMIT 1
               `,
               [
-                tenantId,
+                identityA.tenantId,
 
                 created.id,
               ],
@@ -314,8 +394,8 @@ describe(
                 `/products/${created.id}`,
 
               headers: {
-                'x-tenant-id':
-                  tenantId,
+                cookie:
+                  identityA.cookie,
               },
             });
 
@@ -330,6 +410,7 @@ describe(
           await pool.query(
             `
               UPDATE event_outbox
+
               SET
                 next_attempt_at =
                   '1900-01-01T00:00:00Z',
@@ -368,7 +449,8 @@ describe(
           /*
            * 5. Agora o produto deve
            * estar disponível pelo GET
-           * individual.
+           * individual para o usuário
+           * do Tenant A.
            */
           const getResponse =
             await app.inject({
@@ -379,8 +461,8 @@ describe(
                 `/products/${created.id}`,
 
               headers: {
-                'x-tenant-id':
-                  tenantId,
+                cookie:
+                  identityA.cookie,
               },
             });
 
@@ -419,7 +501,8 @@ describe(
               id:
                 created.id,
 
-              tenantId,
+              tenantId:
+                identityA.tenantId,
 
               sku:
                 expectedSku,
@@ -443,8 +526,9 @@ describe(
           );
 
           /*
-           * 6. A listagem também deve
-           * retornar o produto.
+           * 6. A listagem do Tenant A
+           * também deve retornar
+           * o produto.
            */
           const listResponse =
             await app.inject({
@@ -455,8 +539,8 @@ describe(
                 '/products?limit=20&offset=0',
 
               headers: {
-                'x-tenant-id':
-                  tenantId,
+                cookie:
+                  identityA.cookie,
               },
             });
 
@@ -499,7 +583,8 @@ describe(
                 id:
                   created.id,
 
-                tenantId,
+                tenantId:
+                  identityA.tenantId,
 
                 sku:
                   expectedSku,
@@ -513,12 +598,6 @@ describe(
             ]),
           );
 
-          /*
-           * Como este tenant foi criado
-           * especificamente para este
-           * teste, só deve existir um
-           * produto nele.
-           */
           expect(
             list.items,
           ).toHaveLength(1);
@@ -598,9 +677,13 @@ describe(
           ).toBeNull();
 
           /*
-           * 8. Isolamento multi-tenant:
-           * outro tenant não pode ler
-           * este produto.
+           * 8. Isolamento multi-tenant
+           * real pela sessão.
+           *
+           * O usuário do Tenant B
+           * possui uma sessão válida,
+           * mas não pode ler o produto
+           * pertencente ao Tenant A.
            */
           const wrongTenantResponse =
             await app.inject({
@@ -611,47 +694,114 @@ describe(
                 `/products/${created.id}`,
 
               headers: {
-                'x-tenant-id':
-                  randomUUID(),
+                cookie:
+                  identityB.cookie,
               },
             });
 
           expect(
             wrongTenantResponse.statusCode,
           ).toBe(404);
+
+          /*
+           * A listagem do Tenant B
+           * também não pode conter
+           * o produto do Tenant A.
+           */
+          const wrongTenantList =
+            await app.inject({
+              method:
+                'GET',
+
+              url:
+                '/products?limit=20&offset=0',
+
+              headers: {
+                cookie:
+                  identityB.cookie,
+              },
+            });
+
+          expect(
+            wrongTenantList.statusCode,
+          ).toBe(200);
+
+          const tenantBList =
+            wrongTenantList.json<{
+              items:
+                Array<{
+                  id:
+                    string;
+                }>;
+            }>();
+
+          expect(
+            tenantBList.items,
+          ).toHaveLength(0);
         } finally {
-          await pool.query(
-            `
-              DELETE
-              FROM product_read_model
-              WHERE tenant_id = $1
-            `,
-            [
-              tenantId,
-            ],
-          );
+          /*
+           * Produtos primeiro.
+           *
+           * Depois apagamos Identity,
+           * Session, Membership etc.
+           */
+          if (
+            tenantId !==
+            null
+          ) {
+            await pool.query(
+              `
+                DELETE
+                FROM product_read_model
+                WHERE tenant_id = $1
+              `,
+              [
+                tenantId,
+              ],
+            );
 
-          await pool.query(
-            `
-              DELETE
-              FROM event_outbox
-              WHERE tenant_id = $1
-            `,
-            [
-              tenantId,
-            ],
-          );
+            await pool.query(
+              `
+                DELETE
+                FROM event_outbox
+                WHERE tenant_id = $1
+              `,
+              [
+                tenantId,
+              ],
+            );
 
-          await pool.query(
-            `
-              DELETE
-              FROM products
-              WHERE tenant_id = $1
-            `,
-            [
-              tenantId,
-            ],
-          );
+            await pool.query(
+              `
+                DELETE
+                FROM products
+                WHERE tenant_id = $1
+              `,
+              [
+                tenantId,
+              ],
+            );
+          }
+
+          if (
+            identityA !==
+            null
+          ) {
+            await cleanupAuthenticatedIdentity(
+              pool,
+              identityA,
+            );
+          }
+
+          if (
+            identityB !==
+            null
+          ) {
+            await cleanupAuthenticatedIdentity(
+              pool,
+              identityB,
+            );
+          }
         }
       },
     );

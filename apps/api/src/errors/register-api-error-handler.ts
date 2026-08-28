@@ -1,11 +1,11 @@
 import {
+  ProductSkuAlreadyExistsError,
+} from '@versa/catalog';
+
+import {
   InvalidCredentialsError,
   InvalidSessionError,
 } from '@versa/identity';
-
-import {
-  ProductSkuAlreadyExistsError,
-} from '@versa/catalog';
 
 import type {
   Logger,
@@ -19,23 +19,37 @@ import type {
   FastifyInstance,
 } from 'fastify';
 
+import {
+  ActiveTenantRequiredError,
+} from '../auth/active-tenant-required-error.js';
+
 interface ErrorWithValidation {
-  readonly validation: unknown;
+  readonly validation:
+    unknown;
 }
 
 function isFastifyValidationError(
-  error: unknown,
+  error:
+    unknown,
 ): error is ErrorWithValidation {
   return (
-    typeof error === 'object' &&
-    error !== null &&
-    'validation' in error
+    typeof error ===
+      'object'
+    &&
+    error !==
+      null
+    &&
+    'validation' in
+      error
   );
 }
 
 export function registerApiErrorHandler(
-  app: FastifyInstance,
-  logger?: Logger,
+  app:
+    FastifyInstance,
+
+  logger?:
+    Logger,
 ): void {
   app.setErrorHandler(
     (
@@ -43,6 +57,11 @@ export function registerApiErrorHandler(
       request,
       reply,
     ) => {
+      /*
+       * Erros produzidos pela
+       * validação de schema do
+       * próprio Fastify.
+       */
       if (
         isFastifyValidationError(
           error,
@@ -59,9 +78,13 @@ export function registerApiErrorHandler(
           });
       }
 
+      /*
+       * Value Objects e regras de
+       * entrada inválida do domínio.
+       */
       if (
         error instanceof
-        InvalidValueError
+          InvalidValueError
       ) {
         return reply
           .code(400)
@@ -74,9 +97,74 @@ export function registerApiErrorHandler(
           });
       }
 
+      /*
+       * Credenciais inválidas não
+       * revelam se o problema foi
+       * email ou senha.
+       */
       if (
         error instanceof
-        ProductSkuAlreadyExistsError
+          InvalidCredentialsError
+      ) {
+        return reply
+          .code(401)
+          .send({
+            code:
+              'INVALID_CREDENTIALS',
+
+            message:
+              'E-mail ou senha inválidos.',
+          });
+      }
+
+      /*
+       * Cookie ausente, sessão
+       * desconhecida, adulterada,
+       * expirada, revogada ou com
+       * identidade atualmente
+       * indisponível.
+       */
+      if (
+        error instanceof
+          InvalidSessionError
+      ) {
+        return reply
+          .code(401)
+          .send({
+            code:
+              'INVALID_SESSION',
+
+            message:
+              'Sessão inválida ou expirada.',
+          });
+      }
+
+      /*
+       * Usuário autenticado, mas sem
+       * uma empresa ativa selecionada.
+       *
+       * É diferente de 401:
+       * a identidade é válida, porém
+       * falta contexto operacional.
+       */
+      if (
+        error instanceof
+          ActiveTenantRequiredError
+      ) {
+        return reply
+          .code(403)
+          .send({
+            code:
+              'ACTIVE_TENANT_REQUIRED',
+
+            message:
+              'Selecione uma empresa para continuar.',
+          });
+      }
+
+      if (
+        error instanceof
+          ProductSkuAlreadyExistsError
       ) {
         return reply
           .code(409)
@@ -89,36 +177,14 @@ export function registerApiErrorHandler(
           });
       }
 
-      if (
-  error instanceof
-  InvalidCredentialsError
-) {
-  return reply
-    .code(401)
-    .send({
-      code:
-        'INVALID_CREDENTIALS',
-
-      message:
-        'E-mail ou senha inválidos.',
-    });
-}
-
-if (
-  error instanceof
-  InvalidSessionError
-) {
-  return reply
-    .code(401)
-    .send({
-      code:
-        'INVALID_SESSION',
-
-      message:
-        'Sessão inválida ou expirada.',
-    });
-}
-
+      /*
+       * Qualquer erro que chegou aqui
+       * é inesperado.
+       *
+       * Registramos internamente,
+       * mas não vazamos detalhes
+       * técnicos para o cliente.
+       */
       logger?.error({
         message:
           'Unhandled API error',

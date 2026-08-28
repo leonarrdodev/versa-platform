@@ -44,8 +44,21 @@ import {
 } from '../../src/app.js';
 
 import {
+  createIdentityComposition,
+} from '../../src/composition/identity.js';
+
+import {
   env,
 } from '../../src/config/env.js';
+
+import {
+  cleanupAuthenticatedIdentity,
+  createAuthenticatedIdentity,
+} from './helpers/authenticated-identity.js';
+
+import type {
+  AuthenticatedIdentity,
+} from './helpers/authenticated-identity.js';
 
 const logger:
 Logger = {
@@ -113,27 +126,47 @@ beforeAll(
         productReadRepository,
       );
 
-    app = buildApp({
-      logger:
-        false,
+    const identity =
+      createIdentityComposition(
+        pool,
+      );
 
-      applicationLogger:
-        logger,
+    app =
+      buildApp({
+        logger:
+          false,
 
-      catalog: {
-        createProductHandler,
+        applicationLogger:
+          logger,
 
-        getProductByIdHandler,
+        catalog: {
+          createProductHandler,
 
-        getProductsHandler,
+          getProductByIdHandler,
 
-        idGenerator,
+          getProductsHandler,
 
-        logger,
+          idGenerator,
 
-        monotonicClock,
-      },
-    });
+          logger,
+
+          monotonicClock,
+        },
+
+        identity: {
+          signInHandler:
+            identity.signInHandler,
+
+          resolveSessionHandler:
+            identity.resolveSessionHandler,
+
+          revokeSessionHandler:
+            identity.revokeSessionHandler,
+
+          secureCookies:
+            false,
+        },
+      });
 
     await app.ready();
   },
@@ -147,8 +180,9 @@ afterAll(
   },
 );
 
-async function cleanupTenant(
-  tenantId: string,
+async function cleanupTenantProducts(
+  tenantId:
+    string,
 ): Promise<void> {
   await pool.query(
     `
@@ -188,7 +222,7 @@ describe(
   'Product HTTP error contracts',
   () => {
     it(
-      'returns 400 for invalid tenant UUID',
+      'returns 401 when product creation is unauthenticated',
       async () => {
         const response =
           await app.inject({
@@ -197,11 +231,6 @@ describe(
 
             url:
               '/products',
-
-            headers: {
-              'x-tenant-id':
-                'invalid-tenant',
-            },
 
             payload: {
               sku:
@@ -217,16 +246,16 @@ describe(
 
         expect(
           response.statusCode,
-        ).toBe(400);
+        ).toBe(401);
 
         expect(
           response.json(),
         ).toEqual({
           code:
-            'INVALID_INPUT',
+            'INVALID_SESSION',
 
           message:
-            'Os dados enviados são inválidos.',
+            'Sessão inválida ou expirada.',
         });
       },
     );
@@ -234,91 +263,150 @@ describe(
     it(
       'returns 400 for invalid SKU',
       async () => {
-        const tenantId =
-          randomUUID();
+        let identity:
+          AuthenticatedIdentity | null =
+            null;
 
-        const response =
-          await app.inject({
-            method:
-              'POST',
+        try {
+          identity =
+            await createAuthenticatedIdentity({
+              app,
 
-            url:
-              '/products',
+              pool,
 
-            headers: {
-              'x-tenant-id':
-                tenantId,
-            },
+              prefix:
+                'invalid-sku',
+            });
 
-            payload: {
-              sku:
-                'sku com espaço inválido',
+          const response =
+            await app.inject({
+              method:
+                'POST',
 
-              name:
-                'Produto teste',
+              url:
+                '/products',
 
-              categoryId:
-                randomUUID(),
-            },
+              headers: {
+                cookie:
+                  identity.cookie,
+              },
+
+              payload: {
+                sku:
+                  'sku com espaço inválido',
+
+                name:
+                  'Produto teste',
+
+                categoryId:
+                  randomUUID(),
+              },
+            });
+
+          expect(
+            response.statusCode,
+          ).toBe(400);
+
+          expect(
+            response.json(),
+          ).toEqual({
+            code:
+              'INVALID_INPUT',
+
+            message:
+              'Os dados enviados são inválidos.',
           });
+        } finally {
+          if (
+            identity !==
+            null
+          ) {
+            await cleanupTenantProducts(
+              identity.tenantId,
+            );
 
-        expect(
-          response.statusCode,
-        ).toBe(400);
-
-        expect(
-          response.json(),
-        ).toEqual({
-          code:
-            'INVALID_INPUT',
-
-          message:
-            'Os dados enviados são inválidos.',
-        });
+            await cleanupAuthenticatedIdentity(
+              pool,
+              identity,
+            );
+          }
+        }
       },
     );
 
     it(
-      'returns 404 when product does not exist',
+      'returns 404 when product does not exist in the authenticated tenant',
       async () => {
-        const response =
-          await app.inject({
-            method:
-              'GET',
+        let identity:
+          AuthenticatedIdentity | null =
+            null;
 
-            url:
-              `/products/${randomUUID()}`,
+        try {
+          identity =
+            await createAuthenticatedIdentity({
+              app,
 
-            headers: {
-              'x-tenant-id':
-                randomUUID(),
-            },
+              pool,
+
+              prefix:
+                'not-found',
+            });
+
+          const response =
+            await app.inject({
+              method:
+                'GET',
+
+              url:
+                `/products/${randomUUID()}`,
+
+              headers: {
+                cookie:
+                  identity.cookie,
+              },
+            });
+
+          expect(
+            response.statusCode,
+          ).toBe(404);
+
+          expect(
+            response.json(),
+          ).toEqual({
+            code:
+              'PRODUCT_NOT_FOUND',
+
+            message:
+              'Produto não encontrado.',
           });
+        } finally {
+          if (
+            identity !==
+            null
+          ) {
+            await cleanupTenantProducts(
+              identity.tenantId,
+            );
 
-        expect(
-          response.statusCode,
-        ).toBe(404);
-
-        expect(
-          response.json(),
-        ).toEqual({
-          code:
-            'PRODUCT_NOT_FOUND',
-
-          message:
-            'Produto não encontrado.',
-        });
+            await cleanupAuthenticatedIdentity(
+              pool,
+              identity,
+            );
+          }
+        }
       },
     );
 
     it(
-      'returns 409 for duplicate SKU in the same tenant but allows it in another tenant',
+      'returns 409 for duplicate SKU in the same authenticated tenant but allows it in another tenant',
       async () => {
-        const tenantA =
-          randomUUID();
+        let identityA:
+          AuthenticatedIdentity | null =
+            null;
 
-        const tenantB =
-          randomUUID();
+        let identityB:
+          AuthenticatedIdentity | null =
+            null;
 
         const categoryId =
           randomUUID();
@@ -328,6 +416,26 @@ describe(
             .toUpperCase();
 
         try {
+          identityA =
+            await createAuthenticatedIdentity({
+              app,
+
+              pool,
+
+              prefix:
+                'duplicate-a',
+            });
+
+          identityB =
+            await createAuthenticatedIdentity({
+              app,
+
+              pool,
+
+              prefix:
+                'duplicate-b',
+            });
+
           /*
            * Primeiro cadastro no
            * Tenant A.
@@ -341,8 +449,8 @@ describe(
                 '/products',
 
               headers: {
-                'x-tenant-id':
-                  tenantA,
+                cookie:
+                  identityA.cookie,
               },
 
               payload: {
@@ -360,8 +468,9 @@ describe(
           ).toBe(201);
 
           /*
-           * Mesmo SKU no mesmo tenant
-           * deve resultar em conflito.
+           * Mesmo SKU na mesma sessão
+           * / mesmo tenant deve resultar
+           * em conflito.
            */
           const duplicate =
             await app.inject({
@@ -372,8 +481,8 @@ describe(
                 '/products',
 
               headers: {
-                'x-tenant-id':
-                  tenantA,
+                cookie:
+                  identityA.cookie,
               },
 
               payload: {
@@ -401,8 +510,9 @@ describe(
           });
 
           /*
-           * O mesmo SKU em outro tenant
-           * deve continuar permitido.
+           * O mesmo SKU usando uma
+           * sessão pertencente a outro
+           * tenant continua permitido.
            */
           const otherTenant =
             await app.inject({
@@ -413,8 +523,8 @@ describe(
                 '/products',
 
               headers: {
-                'x-tenant-id':
-                  tenantB,
+                cookie:
+                  identityB.cookie,
               },
 
               payload: {
@@ -430,14 +540,64 @@ describe(
           expect(
             otherTenant.statusCode,
           ).toBe(201);
-        } finally {
-          await cleanupTenant(
-            tenantA,
+
+          const tenantAProduct =
+            first.json<{
+              tenantId:
+                string;
+            }>();
+
+          const tenantBProduct =
+            otherTenant.json<{
+              tenantId:
+                string;
+            }>();
+
+          expect(
+            tenantAProduct.tenantId,
+          ).toBe(
+            identityA.tenantId,
           );
 
-          await cleanupTenant(
-            tenantB,
+          expect(
+            tenantBProduct.tenantId,
+          ).toBe(
+            identityB.tenantId,
           );
+
+          expect(
+            tenantAProduct.tenantId,
+          ).not.toBe(
+            tenantBProduct.tenantId,
+          );
+        } finally {
+          if (
+            identityA !==
+            null
+          ) {
+            await cleanupTenantProducts(
+              identityA.tenantId,
+            );
+
+            await cleanupAuthenticatedIdentity(
+              pool,
+              identityA,
+            );
+          }
+
+          if (
+            identityB !==
+            null
+          ) {
+            await cleanupTenantProducts(
+              identityB.tenantId,
+            );
+
+            await cleanupAuthenticatedIdentity(
+              pool,
+              identityB,
+            );
+          }
         }
       },
     );
@@ -445,32 +605,90 @@ describe(
     it(
       'returns 400 for invalid product list pagination',
       async () => {
+        let identity:
+          AuthenticatedIdentity | null =
+            null;
+
+        try {
+          identity =
+            await createAuthenticatedIdentity({
+              app,
+
+              pool,
+
+              prefix:
+                'pagination',
+            });
+
+          const response =
+            await app.inject({
+              method:
+                'GET',
+
+              url:
+                '/products?limit=101&offset=0',
+
+              headers: {
+                cookie:
+                  identity.cookie,
+              },
+            });
+
+          expect(
+            response.statusCode,
+          ).toBe(400);
+
+          expect(
+            response.json(),
+          ).toEqual({
+            code:
+              'INVALID_INPUT',
+
+            message:
+              'Os dados enviados são inválidos.',
+          });
+        } finally {
+          if (
+            identity !==
+            null
+          ) {
+            await cleanupTenantProducts(
+              identity.tenantId,
+            );
+
+            await cleanupAuthenticatedIdentity(
+              pool,
+              identity,
+            );
+          }
+        }
+      },
+    );
+
+    it(
+      'returns 401 when product listing has no authenticated session',
+      async () => {
         const response =
           await app.inject({
             method:
               'GET',
 
             url:
-              '/products?limit=101&offset=0',
-
-            headers: {
-              'x-tenant-id':
-                randomUUID(),
-            },
+              '/products?limit=20&offset=0',
           });
 
         expect(
           response.statusCode,
-        ).toBe(400);
+        ).toBe(401);
 
         expect(
           response.json(),
         ).toEqual({
           code:
-            'INVALID_INPUT',
+            'INVALID_SESSION',
 
           message:
-            'Os dados enviados são inválidos.',
+            'Sessão inválida ou expirada.',
         });
       },
     );

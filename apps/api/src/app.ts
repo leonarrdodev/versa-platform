@@ -9,6 +9,10 @@ import Fastify, {
 } from 'fastify';
 
 import {
+  createRequireAuthentication,
+} from './auth/require-authentication.js';
+
+import {
   registerApiErrorHandler,
 } from './errors/register-api-error-handler.js';
 
@@ -32,6 +36,12 @@ import type {
   ProductsRouteDependencies,
 } from './routes/products.route.js';
 
+type CatalogRouteDependencies =
+  Omit<
+    ProductsRouteDependencies,
+    'requireAuthentication'
+  >;
+
 interface BuildAppOptions {
   logger?:
     boolean;
@@ -40,7 +50,7 @@ interface BuildAppOptions {
     Logger;
 
   catalog?:
-    ProductsRouteDependencies;
+    CatalogRouteDependencies;
 
   identity?:
     AuthRouteDependencies;
@@ -56,15 +66,27 @@ export function buildApp(
         options.logger ?? true,
     });
 
+  /*
+   * A declaração TypeScript está em
+   * types/fastify.d.ts.
+   *
+   * Aqui fazemos a decoração real
+   * da request em runtime.
+   */
+  app.decorateRequest(
+    'auth',
+    null,
+  );
+
   registerApiErrorHandler(
     app,
     options.applicationLogger,
   );
 
   /*
-   * Cookie parsing/decorators precisam
-   * estar disponíveis antes das rotas
-   * de autenticação.
+   * Disponibiliza request.cookies,
+   * reply.setCookie() e
+   * reply.clearCookie().
    */
   app.register(
     cookie,
@@ -74,17 +96,11 @@ export function buildApp(
     healthRoute,
   );
 
-  if (
-    options.catalog !==
-    undefined
-  ) {
-    app.register(
-      createProductsRoute(
-        options.catalog,
-      ),
-    );
-  }
-
+  /*
+   * As rotas de autenticação podem
+   * existir independentemente do
+   * Catalog.
+   */
   if (
     options.identity !==
     undefined
@@ -93,6 +109,43 @@ export function buildApp(
       createAuthRoute(
         options.identity,
       ),
+    );
+  }
+
+  /*
+   * Catalog HTTP nunca pode ser
+   * exposto sem Identity.
+   *
+   * Isso evita iniciar por engano
+   * endpoints de Product sem
+   * autenticação.
+   */
+  if (
+    options.catalog !==
+    undefined
+  ) {
+    if (
+      options.identity ===
+      undefined
+    ) {
+      throw new Error(
+        'Identity is required when Catalog HTTP routes are enabled',
+      );
+    }
+
+    const requireAuthentication =
+      createRequireAuthentication({
+        resolveSessionHandler:
+          options.identity
+            .resolveSessionHandler,
+      });
+
+    app.register(
+      createProductsRoute({
+        ...options.catalog,
+
+        requireAuthentication,
+      }),
     );
   }
 
