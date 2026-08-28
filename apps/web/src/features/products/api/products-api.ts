@@ -3,18 +3,6 @@ import type {
   ProductPage,
 } from '../types/product';
 
-const tenantId =
-  import.meta.env.VITE_TENANT_ID;
-
-if (
-  typeof tenantId !== 'string' ||
-  tenantId.trim() === ''
-) {
-  throw new Error(
-    'VITE_TENANT_ID não configurado',
-  );
-}
-
 interface ApiErrorResponse {
   readonly code?:
     string;
@@ -105,7 +93,10 @@ async function readApiError(
         body.message;
     }
   } catch {
-    // Mantém a mensagem genérica.
+    /*
+     * Caso a API não devolva JSON,
+     * preservamos a mensagem genérica.
+     */
   }
 
   return new ProductsApiError(
@@ -121,14 +112,21 @@ Promise<ProductPage> {
     await fetch(
       '/api/products?limit=20&offset=0',
       {
-        headers: {
-          'x-tenant-id':
-            tenantId,
-        },
+        /*
+         * A autenticação agora é feita
+         * pelo cookie HttpOnly.
+         *
+         * O frontend não conhece e
+         * não envia tenantId.
+         */
+        credentials:
+          'include',
       },
     );
 
-  if (!response.ok) {
+  if (
+    !response.ok
+  ) {
     throw await readApiError(
       response,
     );
@@ -139,8 +137,11 @@ Promise<ProductPage> {
 }
 
 export async function createProduct(
-  input: CreateProductInput,
-): Promise<CreateProductResult> {
+  input:
+    CreateProductInput,
+): Promise<
+  CreateProductResult
+> {
   const response =
     await fetch(
       '/api/products',
@@ -148,12 +149,12 @@ export async function createProduct(
         method:
           'POST',
 
+        credentials:
+          'include',
+
         headers: {
           'content-type':
             'application/json',
-
-          'x-tenant-id':
-            tenantId,
         },
 
         body:
@@ -163,7 +164,9 @@ export async function createProduct(
       },
     );
 
-  if (!response.ok) {
+  if (
+    !response.ok
+  ) {
     throw await readApiError(
       response,
     );
@@ -174,7 +177,9 @@ export async function createProduct(
 }
 
 export async function waitForProductProjection(
-  productId: string,
+  productId:
+    string,
+
   options: {
     readonly attempts?:
       number;
@@ -182,7 +187,9 @@ export async function waitForProductProjection(
     readonly delayMs?:
       number;
   } = {},
-): Promise<Product | null> {
+): Promise<
+  Product | null
+> {
   const attempts =
     options.attempts ??
     10;
@@ -200,14 +207,14 @@ export async function waitForProductProjection(
       await fetch(
         `/api/products/${productId}`,
         {
-          headers: {
-            'x-tenant-id':
-              tenantId,
-          },
+          credentials:
+            'include',
         },
       );
 
-    if (response.ok) {
+    if (
+      response.ok
+    ) {
       return response.json() as
         Promise<Product>;
     }
@@ -218,7 +225,8 @@ export async function waitForProductProjection(
      * o worker ainda não projetou.
      */
     if (
-      response.status !== 404
+      response.status !==
+      404
     ) {
       throw await readApiError(
         response,
@@ -226,7 +234,9 @@ export async function waitForProductProjection(
     }
 
     await new Promise<void>(
-      (resolve) => {
+      (
+        resolve,
+      ) => {
         window.setTimeout(
           resolve,
           delayMs,
