@@ -15,18 +15,25 @@ import type {
 } from '../../domain/user/user-status.js';
 
 export interface SessionAuthentication {
-  readonly sessionId: string;
+  readonly sessionId:
+    string;
 
-  readonly userId: string;
+  readonly userId:
+    string;
 
-  readonly email: string;
+  readonly email:
+    string;
 
-  readonly displayName: string;
+  readonly displayName:
+    string;
 
   readonly userStatus:
     UserStatus;
 
   readonly activeTenantId:
+    string | null;
+
+  readonly tenantName:
     string | null;
 
   readonly tenantStatus:

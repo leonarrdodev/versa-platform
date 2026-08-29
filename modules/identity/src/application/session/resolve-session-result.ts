@@ -22,6 +22,9 @@ export interface ResolveSessionResult {
         readonly id:
           string;
 
+        readonly name:
+          string;
+
         readonly role:
           MembershipRole;
       }

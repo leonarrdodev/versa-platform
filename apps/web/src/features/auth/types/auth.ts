@@ -13,6 +13,9 @@ export interface ActiveTenant {
   readonly id:
     string;
 
+  readonly name:
+    string;
+
   readonly role:
     'owner'
     | 'admin'

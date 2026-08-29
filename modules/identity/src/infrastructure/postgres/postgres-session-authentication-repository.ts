@@ -18,6 +18,10 @@ import {
   isMembershipStatus,
 } from '../../domain/membership/membership-status.js';
 
+import type {
+  SessionTokenHash,
+} from '../../domain/session/session-token-hash.js';
+
 import {
   isTenantStatus,
 } from '../../domain/tenant/tenant-status.js';
@@ -26,22 +30,26 @@ import {
   isUserStatus,
 } from '../../domain/user/user-status.js';
 
-import type {
-  SessionTokenHash,
-} from '../../domain/session/session-token-hash.js';
-
 interface SessionAuthenticationRow {
-  sessionId: string;
+  sessionId:
+    string;
 
-  userId: string;
+  userId:
+    string;
 
-  email: string;
+  email:
+    string;
 
-  displayName: string;
+  displayName:
+    string;
 
-  userStatus: string;
+  userStatus:
+    string;
 
   activeTenantId:
+    string | null;
+
+  tenantName:
     string | null;
 
   tenantStatus:
@@ -53,11 +61,14 @@ interface SessionAuthenticationRow {
   membershipStatus:
     string | null;
 
-  createdAt: Date;
+  createdAt:
+    Date;
 
-  expiresAt: Date;
+  expiresAt:
+    Date;
 
-  lastSeenAt: Date;
+  lastSeenAt:
+    Date;
 
   revokedAt:
     Date | null;
@@ -71,7 +82,8 @@ implements SessionAuthenticationRepository {
   ) {}
 
   async findByTokenHash(
-    tokenHash: SessionTokenHash,
+    tokenHash:
+      SessionTokenHash,
   ): Promise<
     SessionAuthentication | null
   > {
@@ -97,6 +109,9 @@ implements SessionAuthenticationRepository {
 
               s.active_tenant_id
                 AS "activeTenantId",
+
+              t.name
+                AS "tenantName",
 
               t.status
                 AS "tenantStatus",
@@ -147,7 +162,8 @@ implements SessionAuthenticationRepository {
       result.rows[0];
 
     if (
-      row === undefined
+      row ===
+      undefined
     ) {
       return null;
     }
@@ -162,14 +178,27 @@ implements SessionAuthenticationRepository {
       );
     }
 
+    /*
+     * Sem tenant ativo, nenhum dado
+     * relacionado ao tenant deve ter
+     * vindo dos LEFT JOINs.
+     */
     if (
       row.activeTenantId ===
       null
     ) {
       if (
-        row.tenantStatus !== null
-        || row.membershipRole !== null
-        || row.membershipStatus !== null
+        row.tenantName !==
+          null
+        ||
+        row.tenantStatus !==
+          null
+        ||
+        row.membershipRole !==
+          null
+        ||
+        row.membershipStatus !==
+          null
       ) {
         throw new Error(
           'Unexpected tenant data returned for session without active tenant',
@@ -182,6 +211,9 @@ implements SessionAuthenticationRepository {
         userStatus:
           row.userStatus,
 
+        tenantName:
+          null,
+
         tenantStatus:
           null,
 
@@ -193,10 +225,23 @@ implements SessionAuthenticationRepository {
       };
     }
 
+    /*
+     * Se existe activeTenantId,
+     * precisamos ter recuperado
+     * tenant e membership completos.
+     */
     if (
-      row.tenantStatus === null
-      || row.membershipRole === null
-      || row.membershipStatus === null
+      row.tenantName ===
+        null
+      ||
+      row.tenantStatus ===
+        null
+      ||
+      row.membershipRole ===
+        null
+      ||
+      row.membershipStatus ===
+        null
     ) {
       throw new Error(
         'Incomplete active tenant data returned from database',
@@ -238,6 +283,9 @@ implements SessionAuthenticationRepository {
 
       userStatus:
         row.userStatus,
+
+      tenantName:
+        row.tenantName,
 
       tenantStatus:
         row.tenantStatus,

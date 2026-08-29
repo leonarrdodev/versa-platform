@@ -532,7 +532,7 @@ function AuthenticatedApp({
               {session.activeTenant ===
               null
                 ? 'Selecionar empresa'
-                : 'Empresa ativa'}
+                : session.activeTenant.name}
             </span>
 
             <span>

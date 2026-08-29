@@ -36,12 +36,14 @@ export class ResolveSessionHandler {
   ) {}
 
   async execute(
-    rawToken: string,
+    rawToken:
+      string,
   ): Promise<
     ResolveSessionResult
   > {
     if (
-      rawToken.length === 0
+      rawToken.length ===
+      0
     ) {
       throw new InvalidSessionError();
     }
@@ -61,7 +63,8 @@ export class ResolveSessionHandler {
         );
 
     if (
-      authentication === null
+      authentication ===
+      null
     ) {
       throw new InvalidSessionError();
     }
@@ -93,7 +96,15 @@ export class ResolveSessionHandler {
       authentication.activeTenantId !==
       null
     ) {
+      /*
+       * Uma sessão com tenant ativo
+       * precisa conseguir reconstruir
+       * completamente seu contexto.
+       */
       if (
+        authentication.tenantName ===
+          null
+        ||
         authentication.tenantStatus !==
           'active'
         ||
@@ -124,6 +135,9 @@ export class ResolveSessionHandler {
         activeTenant: {
           id:
             authentication.activeTenantId,
+
+          name:
+            authentication.tenantName,
 
           role:
             authentication.membershipRole,

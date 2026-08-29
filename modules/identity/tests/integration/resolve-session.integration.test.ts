@@ -108,6 +108,9 @@ describe(
               '-',
               '',
             );
+        
+        const tenantName =
+          `Resolve Tenant ${uniqueValue}`;
 
         const email =
           `resolve.${uniqueValue}@example.com`;
@@ -189,8 +192,7 @@ describe(
               displayName:
                 'Resolve Session Integration',
 
-              tenantName:
-                `Resolve Tenant ${uniqueValue}`,
+              tenantName,
 
               password,
             });
@@ -239,6 +241,9 @@ describe(
           ).toEqual({
             id:
               tenantId,
+
+           name:
+             tenantName,
 
             role:
               'owner',
