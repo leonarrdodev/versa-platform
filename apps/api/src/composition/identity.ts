@@ -2,13 +2,16 @@ import {
   Argon2PasswordHasher,
   CreateSessionHandler,
   CryptoSessionTokenGenerator,
+  ListAvailableTenantsHandler,
   LoginHandler,
   PostgresAuthenticationRepository,
   PostgresSessionAuthenticationRepository,
   PostgresSessionRepository,
   PostgresSessionRevocationRepository,
+  PostgresTenantSelectionRepository,
   ResolveSessionHandler,
   RevokeSessionHandler,
+  SetActiveTenantHandler,
   Sha256SessionTokenHasher,
   SignInHandler,
 } from '@versa/identity';
@@ -43,10 +46,17 @@ export interface IdentityComposition {
 
   readonly revokeSessionHandler:
     RevokeSessionHandler;
+
+  readonly listAvailableTenantsHandler:
+    ListAvailableTenantsHandler;
+
+  readonly setActiveTenantHandler:
+    SetActiveTenantHandler;
 }
 
 export function createIdentityComposition(
-  pool: DatabasePool,
+  pool:
+    DatabasePool,
 ): IdentityComposition {
   const clock =
     new SystemClock();
@@ -80,6 +90,11 @@ export function createIdentityComposition(
 
   const sessionRevocationRepository =
     new PostgresSessionRevocationRepository(
+      pool,
+    );
+
+  const tenantSelectionRepository =
+    new PostgresTenantSelectionRepository(
       pool,
     );
 
@@ -124,9 +139,23 @@ export function createIdentityComposition(
         sessionRevocationRepository,
     });
 
+  const listAvailableTenantsHandler =
+    new ListAvailableTenantsHandler({
+      repository:
+        tenantSelectionRepository,
+    });
+
+  const setActiveTenantHandler =
+    new SetActiveTenantHandler({
+      repository:
+        tenantSelectionRepository,
+    });
+
   return {
     signInHandler,
     resolveSessionHandler,
     revokeSessionHandler,
+    listAvailableTenantsHandler,
+    setActiveTenantHandler,
   };
 }

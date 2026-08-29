@@ -173,21 +173,24 @@ beforeAll(
           false,
 
         identity: {
-          signInHandler:
-            identity.signInHandler,
+  signInHandler:
+    identity.signInHandler,
 
-          resolveSessionHandler:
-            identity.resolveSessionHandler,
+  resolveSessionHandler:
+    identity.resolveSessionHandler,
 
-          revokeSessionHandler:
-            identity.revokeSessionHandler,
+  revokeSessionHandler:
+    identity.revokeSessionHandler,
 
-          /*
-           * app.inject() não usa HTTPS.
-           */
-          secureCookies:
-            false,
-        },
+  listAvailableTenantsHandler:
+    identity.listAvailableTenantsHandler,
+
+  setActiveTenantHandler:
+    identity.setActiveTenantHandler,
+
+  secureCookies:
+    false,
+},
       });
 
     await app.ready();
@@ -546,6 +549,8 @@ describe(
             activeTenant: {
               id:
                 tenantId,
+              name:
+                tenantName,
 
               role:
                 'owner',

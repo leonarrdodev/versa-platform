@@ -80,19 +80,25 @@ const app =
     },
 
     identity: {
-  signInHandler:
-    identity.signInHandler,
+      signInHandler:
+        identity.signInHandler,
 
-  resolveSessionHandler:
-    identity.resolveSessionHandler,
+      resolveSessionHandler:
+        identity.resolveSessionHandler,
 
-  revokeSessionHandler:
-    identity.revokeSessionHandler,
+      revokeSessionHandler:
+        identity.revokeSessionHandler,
 
-  secureCookies:
-    env.nodeEnv ===
-      'production',
-},
+      listAvailableTenantsHandler:
+        identity.listAvailableTenantsHandler,
+
+      setActiveTenantHandler:
+        identity.setActiveTenantHandler,
+
+      secureCookies:
+        env.nodeEnv ===
+          'production',
+    },
   });
 
 app.addHook(

@@ -275,3 +275,32 @@ export {
 export {
   PostgresSessionRevocationRepository,
 } from './infrastructure/postgres/postgres-session-revocation-repository.js';
+
+export type {
+  AvailableTenant,
+} from './application/tenant-selection/available-tenant.js';
+
+export type {
+  SetActiveTenantInput,
+  TenantSelectionRepository,
+} from './application/ports/tenant-selection-repository.js';
+
+export {
+  ListAvailableTenantsHandler,
+  type ListAvailableTenantsCommand,
+  type ListAvailableTenantsHandlerDependencies,
+} from './application/tenant-selection/list-available-tenants-handler.js';
+
+export {
+  ActiveTenantNotAllowedError,
+} from './application/tenant-selection/active-tenant-not-allowed-error.js';
+
+export {
+  SetActiveTenantHandler,
+  type SetActiveTenantCommand,
+  type SetActiveTenantHandlerDependencies,
+} from './application/tenant-selection/set-active-tenant-handler.js';
+
+export {
+  PostgresTenantSelectionRepository,
+} from './infrastructure/postgres/postgres-tenant-selection-repository.js';

@@ -3,6 +3,7 @@ import {
 } from '@versa/catalog';
 
 import {
+  ActiveTenantNotAllowedError,
   InvalidCredentialsError,
   InvalidSessionError,
 } from '@versa/identity';
@@ -140,12 +141,34 @@ export function registerApiErrorHandler(
       }
 
       /*
+       * Usuário autenticado tentou
+       * selecionar uma empresa que
+       * não está disponível para
+       * esta sessão.
+       *
+       * Não revelamos se a empresa
+       * existe, está suspensa ou se
+       * simplesmente não pertence
+       * ao usuário.
+       */
+      if (
+        error instanceof
+          ActiveTenantNotAllowedError
+      ) {
+        return reply
+          .code(403)
+          .send({
+            code:
+              'ACTIVE_TENANT_NOT_ALLOWED',
+
+            message:
+              'A empresa selecionada não está disponível para esta sessão.',
+          });
+      }
+
+      /*
        * Usuário autenticado, mas sem
        * uma empresa ativa selecionada.
-       *
-       * É diferente de 401:
-       * a identidade é válida, porém
-       * falta contexto operacional.
        */
       if (
         error instanceof
@@ -180,10 +203,6 @@ export function registerApiErrorHandler(
       /*
        * Qualquer erro que chegou aqui
        * é inesperado.
-       *
-       * Registramos internamente,
-       * mas não vazamos detalhes
-       * técnicos para o cliente.
        */
       logger?.error({
         message:

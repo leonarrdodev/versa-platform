@@ -153,19 +153,25 @@ beforeAll(
           monotonicClock,
         },
 
-        identity: {
-          signInHandler:
-            identity.signInHandler,
+      identity: {
+  signInHandler:
+    identity.signInHandler,
 
-          resolveSessionHandler:
-            identity.resolveSessionHandler,
+  resolveSessionHandler:
+    identity.resolveSessionHandler,
 
-          revokeSessionHandler:
-            identity.revokeSessionHandler,
+  revokeSessionHandler:
+    identity.revokeSessionHandler,
 
-          secureCookies:
-            false,
-        },
+  listAvailableTenantsHandler:
+    identity.listAvailableTenantsHandler,
+
+  setActiveTenantHandler:
+    identity.setActiveTenantHandler,
+
+  secureCookies:
+    false,
+},
       });
 
     await app.ready();
