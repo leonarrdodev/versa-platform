@@ -744,6 +744,80 @@
   font-weight: 800;
 }
 
+.authLoading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 13px;
+  background: #f7f8fb;
+  color: #697487;
+  font-size: 12px;
+}
+
+.authLoadingBrand {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      145deg,
+      #8f78ff,
+      #5f45dc
+    );
+  box-shadow:
+    0 10px 25px
+    rgb(100 72 225 / 22%);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.logoutButton {
+  min-height: 38px;
+  border: 1px solid #35445b;
+  border-radius: 9px;
+  background: transparent;
+  color: #aab8ca;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.logoutButton:hover:not(:disabled) {
+  border-color: #52647e;
+  background: rgb(255 255 255 / 5%);
+  color: #ffffff;
+}
+
+.logoutButton:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.mobileLogoutButton {
+  display: none;
+  min-height: 34px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: #f1effb;
+  color: #6550c7;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.logoutButton:focus-visible,
+.mobileLogoutButton:focus-visible {
+  outline: 3px solid #8b73f3;
+  outline-offset: 3px;
+}
+
 @media (max-width: 1100px) {
   .app {
     grid-template-columns:
@@ -765,6 +839,10 @@
 }
 
 @media (max-width: 760px) {
+
+  .mobileLogoutButton {
+    display: block;
+  }
 
   .productRow {
   min-height: 64px;

@@ -1,6 +1,22 @@
 import {
+  useEffect,
   useState,
 } from 'react';
+
+import {
+  AuthApiError,
+  getSession,
+  login,
+  logout,
+} from '../features/auth/api/auth-api';
+
+import {
+  LoginPage,
+} from '../features/auth/components/LoginPage';
+
+import type {
+  AuthSession,
+} from '../features/auth/types/auth';
 
 import {
   CreateProductPanel,
@@ -12,7 +28,210 @@ import {
 
 import styles from './App.module.css';
 
+type AuthenticationState =
+  | {
+      readonly status:
+        'loading';
+    }
+  | {
+      readonly status:
+        'unauthenticated';
+    }
+  | {
+      readonly status:
+        'authenticated';
+
+      readonly session:
+        AuthSession;
+    };
+
 export function App() {
+  const [
+    authentication,
+    setAuthentication,
+  ] =
+    useState<
+      AuthenticationState
+    >({
+      status:
+        'loading',
+    });
+
+  useEffect(
+    () => {
+      let active =
+        true;
+
+      async function restoreSession():
+      Promise<void> {
+        try {
+          const session =
+            await getSession();
+
+          if (
+            !active
+          ) {
+            return;
+          }
+
+          setAuthentication({
+            status:
+              'authenticated',
+
+            session,
+          });
+        } catch (error) {
+          if (
+            !active
+          ) {
+            return;
+          }
+
+          if (
+            error instanceof
+              AuthApiError
+            &&
+            error.status ===
+              401
+          ) {
+            setAuthentication({
+              status:
+                'unauthenticated',
+            });
+
+            return;
+          }
+
+          /*
+           * Neste estágio, uma falha
+           * para restaurar sessão deixa
+           * o usuário na tela de login.
+           *
+           * Depois podemos adicionar uma
+           * tela específica para API
+           * indisponível.
+           */
+          setAuthentication({
+            status:
+              'unauthenticated',
+          });
+        }
+      }
+
+      void restoreSession();
+
+      return () => {
+        active =
+          false;
+      };
+    },
+    [],
+  );
+
+  async function handleLogin(
+    email:
+      string,
+
+    password:
+      string,
+  ): Promise<void> {
+    await login({
+      email,
+      password,
+    });
+
+    /*
+     * Não confiamos em estado local
+     * derivado do POST /login.
+     *
+     * Consultamos a fonte canônica:
+     * GET /auth/session.
+     */
+    const session =
+      await getSession();
+
+    setAuthentication({
+      status:
+        'authenticated',
+
+      session,
+    });
+  }
+
+  async function handleLogout():
+  Promise<void> {
+    try {
+      await logout();
+    } finally {
+      setAuthentication({
+        status:
+          'unauthenticated',
+      });
+    }
+  }
+
+  if (
+    authentication.status ===
+    'loading'
+  ) {
+    return (
+      <div
+        className={
+          styles.authLoading
+        }
+      >
+        <div
+          className={
+            styles.authLoadingBrand
+          }
+        >
+          V
+        </div>
+
+        <span>
+          Carregando Versa...
+        </span>
+      </div>
+    );
+  }
+
+  if (
+    authentication.status ===
+    'unauthenticated'
+  ) {
+    return (
+      <LoginPage
+        onLogin={
+          handleLogin
+        }
+      />
+    );
+  }
+
+  return (
+    <AuthenticatedApp
+      session={
+        authentication.session
+      }
+      onLogout={
+        handleLogout
+      }
+    />
+  );
+}
+
+interface AuthenticatedAppProps {
+  readonly session:
+    AuthSession;
+
+  readonly onLogout:
+    () => Promise<void>;
+}
+
+function AuthenticatedApp({
+  session,
+  onLogout,
+}: AuthenticatedAppProps) {
   const {
     products,
 
@@ -24,22 +243,97 @@ export function App() {
 
     reload:
       reloadProducts,
-  } = useProducts();
+  } =
+    useProducts();
 
   const [
     createProductOpen,
     setCreateProductOpen,
-  ] = useState(false);
+  ] =
+    useState(false);
+
+  const [
+    loggingOut,
+    setLoggingOut,
+  ] =
+    useState(false);
+
+  const displayName =
+    session.user
+      .displayName;
+
+  const firstName =
+    displayName
+      .trim()
+      .split(/\s+/)[0]
+      ?? displayName;
+
+  const userInitial =
+    displayName
+      .trim()
+      .charAt(0)
+      .toUpperCase()
+      || '?';
+
+  const roleLabel =
+    session.activeTenant
+      ?.role ===
+        'owner'
+      ? 'Proprietário'
+      : session.activeTenant
+          ?.role ===
+            'admin'
+        ? 'Administrador'
+        : session.activeTenant
+            ?.role ===
+              'member'
+          ? 'Membro'
+          : 'Sem empresa ativa';
+
+  async function handleLogoutClick():
+  Promise<void> {
+    setLoggingOut(
+      true,
+    );
+
+    try {
+      await onLogout();
+    } finally {
+      setLoggingOut(
+        false,
+      );
+    }
+  }
 
   return (
-    <div className={styles.app}>
-      <aside className={styles.sidebar}>
-        <div className={styles.brand}>
-          <div className={styles.brandMark}>
+    <div
+      className={
+        styles.app
+      }
+    >
+      <aside
+        className={
+          styles.sidebar
+        }
+      >
+        <div
+          className={
+            styles.brand
+          }
+        >
+          <div
+            className={
+              styles.brandMark
+            }
+          >
             V
           </div>
 
-          <div className={styles.brandText}>
+          <div
+            className={
+              styles.brandText
+            }
+          >
             <strong>
               VERSA
             </strong>
@@ -51,7 +345,9 @@ export function App() {
         </div>
 
         <nav
-          className={styles.navigation}
+          className={
+            styles.navigation
+          }
           aria-label="Navegação principal"
         >
           <a
@@ -194,11 +490,17 @@ export function App() {
             styles.sidebarFooter
           }
         >
-          <div className={styles.user}>
+          <div
+            className={
+              styles.user
+            }
+          >
             <div
-              className={styles.avatar}
+              className={
+                styles.avatar
+              }
             >
-              L
+              {userInitial}
             </div>
 
             <div
@@ -207,11 +509,11 @@ export function App() {
               }
             >
               <strong>
-                Leonardo
+                {displayName}
               </strong>
 
               <span>
-                Administrador
+                {roleLabel}
               </span>
             </div>
           </div>
@@ -221,20 +523,52 @@ export function App() {
               styles.tenantButton
             }
             type="button"
+            disabled={
+              session.activeTenant ===
+              null
+            }
           >
             <span>
-              Versa Wear
+              {session.activeTenant ===
+              null
+                ? 'Selecionar empresa'
+                : 'Empresa ativa'}
             </span>
 
             <span>
               ⌄
             </span>
           </button>
+
+          <button
+            className={
+              styles.logoutButton
+            }
+            type="button"
+            disabled={
+              loggingOut
+            }
+            onClick={() => {
+              void handleLogoutClick();
+            }}
+          >
+            {loggingOut
+              ? 'Saindo...'
+              : 'Sair'}
+          </button>
         </div>
       </aside>
 
-      <div className={styles.workspace}>
-        <header className={styles.topbar}>
+      <div
+        className={
+          styles.workspace
+        }
+      >
+        <header
+          className={
+            styles.topbar
+          }
+        >
           <div
             className={
               styles.mobileBrand
@@ -259,9 +593,13 @@ export function App() {
             }
           >
             <div
-              className={styles.search}
+              className={
+                styles.search
+              }
             >
-              <span aria-hidden="true">
+              <span
+                aria-hidden="true"
+              >
                 ⌕
               </span>
 
@@ -301,7 +639,22 @@ export function App() {
               type="button"
               aria-label="Perfil"
             >
-              L
+              {userInitial}
+            </button>
+
+            <button
+              className={
+                styles.mobileLogoutButton
+              }
+              type="button"
+              disabled={
+                loggingOut
+              }
+              onClick={() => {
+                void handleLogoutClick();
+              }}
+            >
+              Sair
             </button>
 
             <button
@@ -316,7 +669,11 @@ export function App() {
           </div>
         </header>
 
-        <main className={styles.main}>
+        <main
+          className={
+            styles.main
+          }
+        >
           <section
             className={
               styles.pageHeader
@@ -325,12 +682,12 @@ export function App() {
           >
             <div>
               <h1>
-                Olá, Leonardo! 👋
+                Olá, {firstName}! 👋
               </h1>
 
               <p>
-                Aqui está o começo do seu
-                ambiente operacional Versa.
+                Aqui está o seu ambiente
+                operacional Versa.
               </p>
             </div>
 
@@ -349,7 +706,9 @@ export function App() {
           </section>
 
           <section
-            className={styles.metrics}
+            className={
+              styles.metrics
+            }
             aria-label="Resumo operacional"
           >
             <article
@@ -507,8 +866,8 @@ export function App() {
                   </h2>
 
                   <p>
-                    Gerencie o catálogo da
-                    Versa Wear.
+                    Gerencie o catálogo
+                    da empresa ativa.
                   </p>
                 </div>
 
@@ -546,8 +905,8 @@ export function App() {
                   </div>
 
                   <p>
-                    Buscando produtos do
-                    catálogo.
+                    Buscando produtos
+                    do catálogo.
                   </p>
                 </div>
               ) : productsError !==
@@ -596,9 +955,8 @@ export function App() {
 
                   <p>
                     Cadastre seu primeiro
-                    produto para começar a
-                    construir o catálogo da
-                    Versa.
+                    produto para começar
+                    a construir o catálogo.
                   </p>
 
                   <button
@@ -623,7 +981,9 @@ export function App() {
                   }
                 >
                   {products.map(
-                    (product) => (
+                    (
+                      product,
+                    ) => (
                       <article
                         className={
                           styles.productRow
@@ -707,8 +1067,33 @@ export function App() {
                     styles.newBadge
                   }
                 >
-                  Fase 1
+                  Fase 2
                 </span>
+              </div>
+
+              <div
+                className={
+                  styles.statusItem
+                }
+              >
+                <span
+                  className={
+                    styles.statusIcon
+                  }
+                >
+                  ✓
+                </span>
+
+                <div>
+                  <strong>
+                    Sessão autenticada
+                  </strong>
+
+                  <p>
+                    Identidade e empresa
+                    resolvidas pelo backend.
+                  </p>
+                </div>
               </div>
 
               <div
@@ -730,8 +1115,8 @@ export function App() {
                   </strong>
 
                   <p>
-                    Criação e leitura de
-                    produtos.
+                    Catálogo isolado por
+                    tenant autenticado.
                   </p>
                 </div>
               </div>
@@ -757,31 +1142,6 @@ export function App() {
                   <p>
                     Outbox, retry e
                     dead-letter.
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className={
-                  styles.statusItem
-                }
-              >
-                <span
-                  className={
-                    styles.statusIcon
-                  }
-                >
-                  ●
-                </span>
-
-                <div>
-                  <strong>
-                    Frontend evoluindo
-                  </strong>
-
-                  <p>
-                    Primeira interface
-                    funcional.
                   </p>
                 </div>
               </div>
