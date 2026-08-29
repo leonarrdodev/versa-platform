@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
+    "dev": "tsx watch --clear-screen=false --include \"../../modules/*/dist/**/*\" --include \"../../packages/*/dist/**/*\" src/main.ts",
+    "dev:create-owner": "tsx src/dev/create-owner.ts",
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -12,8 +13,7 @@
     "db:check": "tsx src/database-check.ts",
     "db:migrate": "tsx src/database-migrate.ts",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
-    "typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit",
-    "dev:create-owner": "tsx src/dev/create-owner.ts"
+    "typecheck:e2e": "tsc -p tsconfig.e2e.json --noEmit"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

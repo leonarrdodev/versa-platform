@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
- "scripts": {
-  "dev": "tsx watch src/main.ts",
-  "build": "rm -rf dist && tsc -p tsconfig.build.json",
-  "start": "node dist/main.js",
-  "test": "vitest run --config vitest.config.ts",
-  "test:integration": "vitest run --config vitest.integration.config.ts",
-  "typecheck:integration": "tsc -p tsconfig.integration.json --noEmit"
-},
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false --include \"../../packages/*/dist/**/*\" src/main.ts",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "test": "vitest run --config vitest.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "typecheck:integration": "tsc -p tsconfig.integration.json --noEmit"
+  },
   "devDependencies": {
     "@types/node": "^24.13.3",
     "@types/pg": "^8.20.2",
