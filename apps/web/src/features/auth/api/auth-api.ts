@@ -1,5 +1,6 @@
 import type {
   AuthSession,
+  AvailableTenant,
   LoginInput,
 } from '../types/auth';
 
@@ -9,6 +10,11 @@ interface ApiErrorResponse {
 
   readonly message?:
     string;
+}
+
+interface AvailableTenantsResponse {
+  readonly tenants:
+    readonly AvailableTenant[];
 }
 
 export class AuthApiError
@@ -124,11 +130,8 @@ export async function login(
   }
 
   /*
-   * Não precisamos guardar o
-   * resultado do login.
-   *
-   * A fonte da verdade para o React
-   * será GET /auth/session.
+   * A fonte da verdade continua sendo
+   * GET /auth/session.
    */
 }
 
@@ -140,6 +143,72 @@ Promise<AuthSession> {
       {
         credentials:
           'include',
+      },
+    );
+
+  if (
+    !response.ok
+  ) {
+    throw await readApiError(
+      response,
+    );
+  }
+
+  return response.json() as
+    Promise<AuthSession>;
+}
+
+export async function getAvailableTenants():
+Promise<
+  readonly AvailableTenant[]
+> {
+  const response =
+    await fetch(
+      '/api/auth/tenants',
+      {
+        credentials:
+          'include',
+      },
+    );
+
+  if (
+    !response.ok
+  ) {
+    throw await readApiError(
+      response,
+    );
+  }
+
+  const body =
+    await response.json() as
+      AvailableTenantsResponse;
+
+  return body.tenants;
+}
+
+export async function setActiveTenant(
+  tenantId:
+    string,
+): Promise<AuthSession> {
+  const response =
+    await fetch(
+      '/api/auth/active-tenant',
+      {
+        method:
+          'POST',
+
+        credentials:
+          'include',
+
+        headers: {
+          'content-type':
+            'application/json',
+        },
+
+        body:
+          JSON.stringify({
+            tenantId,
+          }),
       },
     );
 

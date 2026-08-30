@@ -977,4 +977,12 @@
   .metricCard {
     min-height: 105px;
   }
+
+    .topbarActions {
+    gap: 6px;
+  }
+
+  .topbarAvatar {
+    display: none;
+  }
 }

@@ -1,0 +1,264 @@
+.sidebarRoot,
+.mobileRoot {
+  position: relative;
+}
+
+.sidebarRoot {
+  width: 100%;
+}
+
+.mobileRoot {
+  display: none;
+}
+
+.sidebarButton {
+  width: 100%;
+  min-height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid #35445b;
+  border-radius: 9px;
+  background: transparent;
+  color: #e7edf6;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sidebarButton:hover {
+  border-color: #52647e;
+  background:
+    rgb(255 255 255 / 4%);
+}
+
+.buttonTenantName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobileButton {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border: 1px solid #e4e2ef;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #4b426e;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mobileTenantMark {
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #eeeaff;
+  color: #684fd3;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.mobileTenantName {
+  max-width: 92px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebarMenu,
+.mobileMenu {
+  z-index: 80;
+  width: 280px;
+  position: absolute;
+  overflow: hidden;
+  border: 1px solid #e2e5eb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 45px
+    rgb(20 29 45 / 18%);
+  color: #20232d;
+}
+
+.sidebarMenu {
+  left: 0;
+  bottom: calc(100% + 8px);
+}
+
+.mobileMenu {
+  top: calc(100% + 8px);
+  right: 0;
+}
+
+.menuHeader {
+  display: flex;
+  flex-direction: column;
+  padding: 13px 14px 11px;
+  border-bottom: 1px solid #eceef2;
+}
+
+.menuHeader strong {
+  font-size: 11px;
+}
+
+.menuHeader span {
+  margin-top: 2px;
+  color: #929aa7;
+  font-size: 9px;
+}
+
+.options {
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+}
+
+.option,
+.selectedOption {
+  width: 100%;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    18px;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.option:hover:not(:disabled) {
+  background: #f5f6f9;
+}
+
+.selectedOption {
+  background: #f0edff;
+}
+
+.option:disabled,
+.selectedOption:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.optionMark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #eeeaff;
+  color: #684fd3;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.optionText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.optionText strong {
+  overflow: hidden;
+  color: #272a34;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionText small {
+  margin-top: 3px;
+  color: #8b94a2;
+  font-size: 8px;
+}
+
+.optionStatus {
+  color: #6951d3;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.menuState {
+  padding: 24px 14px;
+  color: #858e9c;
+  font-size: 10px;
+  text-align: center;
+}
+
+.menuError {
+  display: grid;
+  gap: 9px;
+  padding: 14px;
+  color: #b45149;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.menuError button {
+  width: max-content;
+  border: 0;
+  background: transparent;
+  color: #6750ca;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.actionError {
+  margin: 0 7px 7px;
+  padding: 9px;
+  border-radius: 7px;
+  background: #fff1ef;
+  color: #b14d45;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.sidebarButton:focus-visible,
+.mobileButton:focus-visible,
+.option:focus-visible,
+.selectedOption:focus-visible,
+.menuError button:focus-visible {
+  outline: 3px solid #8b73f3;
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .mobileRoot {
+    display: block;
+  }
+
+  .mobileMenu {
+    width: auto;
+    position: fixed;
+    top: 68px;
+    right: 15px;
+    left: 15px;
+  }
+}
+
+@media (max-width: 430px) {
+  .mobileTenantName {
+    display: none;
+  }
+}

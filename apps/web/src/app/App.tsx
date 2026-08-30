@@ -8,11 +8,20 @@ import {
   getSession,
   login,
   logout,
+  setActiveTenant,
 } from '../features/auth/api/auth-api';
 
 import {
   LoginPage,
 } from '../features/auth/components/LoginPage';
+
+import {
+  TenantSelectionPage,
+} from '../features/auth/components/TenantSelectionPage';
+
+import {
+  TenantSwitcher,
+} from '../features/auth/components/TenantSwitcher';
 
 import type {
   AuthSession,
@@ -44,6 +53,26 @@ type AuthenticationState =
       readonly session:
         AuthSession;
     };
+
+type AuthenticatedSession =
+  AuthSession & {
+    readonly activeTenant:
+      NonNullable<
+        AuthSession[
+          'activeTenant'
+        ]
+      >;
+  };
+
+function hasActiveTenant(
+  session:
+    AuthSession,
+): session is AuthenticatedSession {
+  return (
+    session.activeTenant !==
+    null
+  );
+}
 
 export function App() {
   const [
@@ -102,15 +131,6 @@ export function App() {
             return;
           }
 
-          /*
-           * Neste estágio, uma falha
-           * para restaurar sessão deixa
-           * o usuário na tela de login.
-           *
-           * Depois podemos adicionar uma
-           * tela específica para API
-           * indisponível.
-           */
           setAuthentication({
             status:
               'unauthenticated',
@@ -140,15 +160,33 @@ export function App() {
       password,
     });
 
-    /*
-     * Não confiamos em estado local
-     * derivado do POST /login.
-     *
-     * Consultamos a fonte canônica:
-     * GET /auth/session.
-     */
     const session =
       await getSession();
+
+    setAuthentication({
+      status:
+        'authenticated',
+
+      session,
+    });
+  }
+
+  async function handleSelectTenant(
+    tenantId:
+      string,
+  ): Promise<void> {
+    /*
+     * O contexto local só muda
+     * depois que o backend confirma
+     * a troca de empresa.
+     *
+     * Se houver erro, a empresa
+     * anterior continua ativa.
+     */
+    const session =
+      await setActiveTenant(
+        tenantId,
+      );
 
     setAuthentication({
       status:
@@ -208,10 +246,46 @@ export function App() {
     );
   }
 
+  if (
+    !hasActiveTenant(
+      authentication.session,
+    )
+  ) {
+    return (
+      <TenantSelectionPage
+        displayName={
+          authentication.session
+            .user.displayName
+        }
+        onSelectTenant={
+          handleSelectTenant
+        }
+        onLogout={
+          handleLogout
+        }
+      />
+    );
+  }
+
   return (
     <AuthenticatedApp
+      /*
+       * Quando o tenant muda,
+       * React desmonta o workspace
+       * anterior e cria outro.
+       *
+       * Isso evita reaproveitar
+       * estado visual entre tenants.
+       */
+      key={
+        authentication.session
+          .activeTenant.id
+      }
       session={
         authentication.session
+      }
+      onSelectTenant={
+        handleSelectTenant
       }
       onLogout={
         handleLogout
@@ -222,7 +296,13 @@ export function App() {
 
 interface AuthenticatedAppProps {
   readonly session:
-    AuthSession;
+    AuthenticatedSession;
+
+  readonly onSelectTenant:
+    (
+      tenantId:
+        string,
+    ) => Promise<void>;
 
   readonly onLogout:
     () => Promise<void>;
@@ -230,6 +310,7 @@ interface AuthenticatedAppProps {
 
 function AuthenticatedApp({
   session,
+  onSelectTenant,
   onLogout,
 }: AuthenticatedAppProps) {
   const {
@@ -277,18 +358,14 @@ function AuthenticatedApp({
 
   const roleLabel =
     session.activeTenant
-      ?.role ===
+      .role ===
         'owner'
       ? 'Proprietário'
       : session.activeTenant
-          ?.role ===
+          .role ===
             'admin'
         ? 'Administrador'
-        : session.activeTenant
-            ?.role ===
-              'member'
-          ? 'Membro'
-          : 'Sem empresa ativa';
+        : 'Membro';
 
   async function handleLogoutClick():
   Promise<void> {
@@ -518,27 +595,15 @@ function AuthenticatedApp({
             </div>
           </div>
 
-          <button
-            className={
-              styles.tenantButton
+          <TenantSwitcher
+            activeTenant={
+              session.activeTenant
             }
-            type="button"
-            disabled={
-              session.activeTenant ===
-              null
+            onSelectTenant={
+              onSelectTenant
             }
-          >
-            <span>
-              {session.activeTenant ===
-              null
-                ? 'Selecionar empresa'
-                : session.activeTenant.name}
-            </span>
-
-            <span>
-              ⌄
-            </span>
-          </button>
+            variant="sidebar"
+          />
 
           <button
             className={
@@ -631,6 +696,16 @@ function AuthenticatedApp({
             >
               ?
             </button>
+
+            <TenantSwitcher
+              activeTenant={
+                session.activeTenant
+              }
+              onSelectTenant={
+                onSelectTenant
+              }
+              variant="mobile"
+            />
 
             <button
               className={

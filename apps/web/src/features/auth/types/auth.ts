@@ -1,3 +1,8 @@
+export type TenantRole =
+  'owner'
+  | 'admin'
+  | 'member';
+
 export interface AuthenticatedUser {
   readonly id:
     string;
@@ -17,9 +22,18 @@ export interface ActiveTenant {
     string;
 
   readonly role:
-    'owner'
-    | 'admin'
-    | 'member';
+    TenantRole;
+}
+
+export interface AvailableTenant {
+  readonly id:
+    string;
+
+  readonly name:
+    string;
+
+  readonly role:
+    TenantRole;
 }
 
 export interface AuthSession {
