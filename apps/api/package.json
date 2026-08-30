@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch --clear-screen=false --include \"../../modules/*/dist/**/*\" --include \"../../packages/*/dist/**/*\" src/main.ts",
     "dev:create-owner": "tsx src/dev/create-owner.ts",
+    "dev:add-tenant": "tsx src/dev/add-tenant.ts",
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
