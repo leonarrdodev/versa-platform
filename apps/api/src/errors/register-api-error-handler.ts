@@ -1,4 +1,5 @@
 import {
+  CategoryNameAlreadyExistsError,
   ProductSkuAlreadyExistsError,
 } from '@versa/catalog';
 
@@ -184,6 +185,21 @@ export function registerApiErrorHandler(
               'Selecione uma empresa para continuar.',
           });
       }
+
+      if (
+  error instanceof
+    CategoryNameAlreadyExistsError
+) {
+  return reply
+    .code(409)
+    .send({
+      code:
+        'CATEGORY_NAME_ALREADY_EXISTS',
+
+      message:
+        'Já existe uma categoria com este nome.',
+    });
+}
 
       if (
         error instanceof

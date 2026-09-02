@@ -62,8 +62,14 @@ const app =
       logger,
 
     catalog: {
+      createCategoryHandler:
+        catalog.createCategoryHandler,
+
       createProductHandler:
         catalog.createProductHandler,
+
+      getCategoriesHandler:
+        catalog.getCategoriesHandler,
 
       getProductByIdHandler:
         catalog.getProductByIdHandler,

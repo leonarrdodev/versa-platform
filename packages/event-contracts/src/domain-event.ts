@@ -19,3 +19,9 @@ export interface DomainEventEnvelope<
   readonly occurredAt: string;
   readonly payload: Readonly<TPayload>;
 }
+
+export type DomainEvent =
+  DomainEventEnvelope<
+    string,
+    unknown
+  >;

@@ -3,13 +3,15 @@ import {
 } from 'node:crypto';
 
 import {
+  CreateCategoryHandler,
   CreateProductHandler,
+  GetCategoriesHandler,
   GetProductByIdHandler,
   GetProductsHandler,
   PostgresCatalogUnitOfWork,
+  PostgresCategoryReadRepository,
   PostgresProductReadRepository,
 } from '@versa/catalog';
-
 import {
   createDatabasePool,
 } from '@versa/database';
@@ -64,6 +66,11 @@ import type {
   AuthenticatedIdentity,
 } from './helpers/authenticated-identity.js';
 
+import {
+  cleanupTenantCatalog,
+  createTestCategory,
+} from './helpers/catalog-fixtures.js';
+
 const logger:
 Logger = {
   log() {},
@@ -117,6 +124,15 @@ beforeAll(
         pool,
       );
 
+    const createCategoryHandler =
+      new CreateCategoryHandler({
+        clock,
+
+        idGenerator,
+
+        unitOfWork,
+      });
+
     const createProductHandler =
       new CreateProductHandler({
         clock,
@@ -130,6 +146,16 @@ beforeAll(
       new PostgresProductReadRepository(
         pool,
       );
+
+      const categoryReadRepository =
+  new PostgresCategoryReadRepository(
+    pool,
+  );
+
+const getCategoriesHandler =
+  new GetCategoriesHandler(
+    categoryReadRepository,
+  );
 
     const getProductByIdHandler =
       new GetProductByIdHandler(
@@ -155,38 +181,42 @@ beforeAll(
           logger,
 
         catalog: {
-          createProductHandler,
+  createCategoryHandler,
 
-          getProductByIdHandler,
+  createProductHandler,
 
-          getProductsHandler,
+  getCategoriesHandler,
 
-          idGenerator,
+  getProductByIdHandler,
 
-          logger,
+  getProductsHandler,
 
-          monotonicClock,
-        },
+  idGenerator,
 
-       identity: {
-  signInHandler:
-    identity.signInHandler,
+  logger,
 
-  resolveSessionHandler:
-    identity.resolveSessionHandler,
-
-  revokeSessionHandler:
-    identity.revokeSessionHandler,
-
-  listAvailableTenantsHandler:
-    identity.listAvailableTenantsHandler,
-
-  setActiveTenantHandler:
-    identity.setActiveTenantHandler,
-
-  secureCookies:
-    false,
+  monotonicClock,
 },
+
+        identity: {
+          signInHandler:
+            identity.signInHandler,
+
+          resolveSessionHandler:
+            identity.resolveSessionHandler,
+
+          revokeSessionHandler:
+            identity.revokeSessionHandler,
+
+          listAvailableTenantsHandler:
+            identity.listAvailableTenantsHandler,
+
+          setActiveTenantHandler:
+            identity.setActiveTenantHandler,
+
+          secureCookies:
+            false,
+        },
       });
 
     await app.ready();
@@ -207,9 +237,6 @@ describe(
     it(
       'creates, projects, reads and lists a product using the authenticated tenant',
       async () => {
-        const categoryId =
-          randomUUID();
-
         const sku =
           `E2E-${randomUUID()}`;
 
@@ -222,10 +249,6 @@ describe(
 
         let identityB:
           AuthenticatedIdentity | null =
-            null;
-
-        let tenantId:
-          string | null =
             null;
 
         try {
@@ -254,8 +277,21 @@ describe(
                 'product-b',
             });
 
-          tenantId =
-            identityA.tenantId;
+          /*
+           * Product agora referencia
+           * uma Category real do mesmo
+           * tenant.
+           */
+          const categoryId =
+            await createTestCategory({
+              pool,
+
+              tenantId:
+                identityA.tenantId,
+
+              name:
+                'Categoria Product E2E',
+            });
 
           /*
            * 1. Cria o produto pela API
@@ -410,8 +446,9 @@ describe(
           ).toBe(404);
 
           /*
-           * Torna o evento deste teste
-           * inequivocamente elegível.
+           * Torna o ProductCreated
+           * deste teste inequivocamente
+           * elegível.
            */
           await pool.query(
             `
@@ -746,53 +783,25 @@ describe(
           ).toHaveLength(0);
         } finally {
           /*
-           * Produtos primeiro.
+           * Catalog precisa ser limpo
+           * antes de Identity.
            *
-           * Depois apagamos Identity,
-           * Session, Membership etc.
+           * A ordem interna do helper é:
+           *
+           * projection
+           * → outbox
+           * → products
+           * → categories
            */
-          if (
-            tenantId !==
-            null
-          ) {
-            await pool.query(
-              `
-                DELETE
-                FROM product_read_model
-                WHERE tenant_id = $1
-              `,
-              [
-                tenantId,
-              ],
-            );
-
-            await pool.query(
-              `
-                DELETE
-                FROM event_outbox
-                WHERE tenant_id = $1
-              `,
-              [
-                tenantId,
-              ],
-            );
-
-            await pool.query(
-              `
-                DELETE
-                FROM products
-                WHERE tenant_id = $1
-              `,
-              [
-                tenantId,
-              ],
-            );
-          }
-
           if (
             identityA !==
             null
           ) {
+            await cleanupTenantCatalog(
+              pool,
+              identityA.tenantId,
+            );
+
             await cleanupAuthenticatedIdentity(
               pool,
               identityA,
@@ -803,6 +812,11 @@ describe(
             identityB !==
             null
           ) {
+            await cleanupTenantCatalog(
+              pool,
+              identityB.tenantId,
+            );
+
             await cleanupAuthenticatedIdentity(
               pool,
               identityB,

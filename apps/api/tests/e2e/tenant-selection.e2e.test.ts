@@ -53,6 +53,11 @@ import {
   env,
 } from '../../src/config/env.js';
 
+import {
+  cleanupTenantCatalog,
+  createTestCategory,
+} from './helpers/catalog-fixtures.js';
+
 const logger:
 Logger = {
   log() {},
@@ -131,49 +136,6 @@ function extractCookie(
   return cookie;
 }
 
-async function cleanupProducts(
-  tenantIds:
-    readonly string[],
-): Promise<void> {
-  for (
-    const tenantId
-    of tenantIds
-  ) {
-    await pool.query(
-      `
-        DELETE
-        FROM product_read_model
-        WHERE tenant_id = $1
-      `,
-      [
-        tenantId,
-      ],
-    );
-
-    await pool.query(
-      `
-        DELETE
-        FROM event_outbox
-        WHERE tenant_id = $1
-      `,
-      [
-        tenantId,
-      ],
-    );
-
-    await pool.query(
-      `
-        DELETE
-        FROM products
-        WHERE tenant_id = $1
-      `,
-      [
-        tenantId,
-      ],
-    );
-  }
-}
-
 beforeAll(
   async () => {
     pool =
@@ -200,22 +162,28 @@ beforeAll(
           logger,
 
         catalog: {
-          createProductHandler:
-            catalog.createProductHandler,
+  createCategoryHandler:
+    catalog.createCategoryHandler,
 
-          getProductByIdHandler:
-            catalog.getProductByIdHandler,
+  createProductHandler:
+    catalog.createProductHandler,
 
-          getProductsHandler:
-            catalog.getProductsHandler,
+  getCategoriesHandler:
+    catalog.getCategoriesHandler,
 
-          idGenerator:
-            catalog.idGenerator,
+  getProductByIdHandler:
+    catalog.getProductByIdHandler,
 
-          logger,
+  getProductsHandler:
+    catalog.getProductsHandler,
 
-          monotonicClock,
-        },
+  idGenerator:
+    catalog.idGenerator,
+
+  logger,
+
+  monotonicClock,
+},
 
         identity: {
           signInHandler:
@@ -285,9 +253,6 @@ describe(
           randomUUID();
 
         const tenantCId =
-          randomUUID();
-
-        const categoryId =
           randomUUID();
 
         const sku =
@@ -422,6 +387,36 @@ describe(
               tenantCName,
             ],
           );
+
+          /*
+           * Product agora exige uma
+           * Category real pertencente
+           * ao mesmo tenant.
+           *
+           * Cada tenant recebe sua
+           * própria Category.
+           */
+          const categoryAId =
+            await createTestCategory({
+              pool,
+
+              tenantId:
+                tenantAId,
+
+              name:
+                `Categoria Tenant A ${uniqueValue}`,
+            });
+
+          const categoryBId =
+            await createTestCategory({
+              pool,
+
+              tenantId:
+                tenantBId,
+
+              name:
+                `Categoria Tenant B ${uniqueValue}`,
+            });
 
           /*
            * 3. Login.
@@ -630,6 +625,9 @@ describe(
            * mesma sessão.
            *
            * Nenhum tenantId é enviado.
+           *
+           * A Category utilizada também
+           * pertence ao Tenant B.
            */
           const productBResponse =
             await app.inject({
@@ -649,7 +647,8 @@ describe(
                 name:
                   'Produto Tenant B',
 
-                categoryId,
+                categoryId:
+                  categoryBId,
               },
             });
 
@@ -722,6 +721,9 @@ describe(
            * Isso prova que o Catalog
            * passou a usar o novo
            * contexto da sessão.
+           *
+           * A Category agora também é
+           * específica do Tenant A.
            */
           const productAResponse =
             await app.inject({
@@ -741,7 +743,8 @@ describe(
                 name:
                   'Produto Tenant A',
 
-                categoryId,
+                categoryId:
+                  categoryAId,
               },
             });
 
@@ -879,6 +882,9 @@ describe(
            * É uma prova adicional de
            * que a mesma sessão realmente
            * trocou o contexto do Catalog.
+           *
+           * A Category utilizada volta
+           * a ser a Category do Tenant B.
            */
           const duplicateInB =
             await app.inject({
@@ -898,7 +904,8 @@ describe(
                 name:
                   'Produto duplicado B',
 
-                categoryId,
+                categoryId:
+                  categoryBId,
               },
             });
 
@@ -977,18 +984,30 @@ describe(
             ]),
           );
         } finally {
-          const tenantIds = [
-            tenantAId,
-            tenantBId,
-          ].filter(
-            (
-              value,
-            ): value is string =>
-              value !== null,
-          );
+          /*
+           * Catalog precisa ser
+           * removido antes de Identity.
+           *
+           * O helper respeita:
+           *
+           * product_read_model
+           * → event_outbox
+           * → products
+           * → categories
+           */
+          if (
+            tenantAId !==
+            null
+          ) {
+            await cleanupTenantCatalog(
+              pool,
+              tenantAId,
+            );
+          }
 
-          await cleanupProducts(
-            tenantIds,
+          await cleanupTenantCatalog(
+            pool,
+            tenantBId,
           );
 
           /*

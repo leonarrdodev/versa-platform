@@ -1,8 +1,11 @@
 import {
+  CreateCategoryHandler,
   CreateProductHandler,
+  GetCategoriesHandler,
   GetProductByIdHandler,
   GetProductsHandler,
   PostgresCatalogUnitOfWork,
+  PostgresCategoryReadRepository,
   PostgresProductReadRepository,
 } from '@versa/catalog';
 
@@ -25,8 +28,14 @@ type DatabasePool =
   >;
 
 export interface CatalogComposition {
+  readonly createCategoryHandler:
+    CreateCategoryHandler;
+
   readonly createProductHandler:
     CreateProductHandler;
+
+  readonly getCategoriesHandler:
+    GetCategoriesHandler;
 
   readonly getProductByIdHandler:
     GetProductByIdHandler;
@@ -39,7 +48,8 @@ export interface CatalogComposition {
 }
 
 export function createCatalogComposition(
-  pool: DatabasePool,
+  pool:
+    DatabasePool,
 ): CatalogComposition {
   const clock =
     new SystemClock();
@@ -57,6 +67,30 @@ export function createCatalogComposition(
       pool,
     );
 
+  const categoryReadRepository =
+    new PostgresCategoryReadRepository(
+      pool,
+    );
+
+  const createCategoryHandler =
+    new CreateCategoryHandler({
+      clock,
+      idGenerator,
+      unitOfWork,
+    });
+
+  const createProductHandler =
+    new CreateProductHandler({
+      clock,
+      idGenerator,
+      unitOfWork,
+    });
+
+  const getCategoriesHandler =
+    new GetCategoriesHandler(
+      categoryReadRepository,
+    );
+
   const getProductByIdHandler =
     new GetProductByIdHandler(
       productReadRepository,
@@ -67,15 +101,10 @@ export function createCatalogComposition(
       productReadRepository,
     );
 
-  const createProductHandler =
-    new CreateProductHandler({
-      clock,
-      idGenerator,
-      unitOfWork,
-    });
-
   return {
+    createCategoryHandler,
     createProductHandler,
+    getCategoriesHandler,
     getProductByIdHandler,
     getProductsHandler,
     idGenerator,

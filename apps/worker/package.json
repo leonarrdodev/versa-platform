@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch --clear-screen=false --include \"../../packages/*/dist/**/*\" src/main.ts",
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/main.js",
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",

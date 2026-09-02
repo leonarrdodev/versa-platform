@@ -3,7 +3,7 @@ import type {
 } from 'pg';
 
 import type {
-  ProductCreatedEvent,
+  DomainEvent,
 } from '@versa/event-contracts';
 
 import type {
@@ -17,9 +17,8 @@ implements OutboxRepository {
   ) {}
 
   async append(
-    events:
-      readonly ProductCreatedEvent[],
-  ): Promise<void> {
+  events: readonly DomainEvent[],
+): Promise<void> {
     for (const event of events) {
       await this.client.query(
         `

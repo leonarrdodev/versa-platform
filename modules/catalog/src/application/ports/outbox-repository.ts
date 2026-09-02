@@ -1,9 +1,9 @@
 import type {
-  ProductCreatedEvent,
+  DomainEvent,
 } from '@versa/event-contracts';
 
 export interface OutboxRepository {
   append(
-    events: readonly ProductCreatedEvent[],
+    events: readonly DomainEvent[],
   ): Promise<void>;
 }

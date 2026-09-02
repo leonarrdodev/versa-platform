@@ -127,3 +127,72 @@ export type {
   FindProductsOptions,
   ProductReadPage,
 } from './application/ports/product-read-repository.js';
+
+export {
+  CategoryName,
+} from './domain/category/category-name.js';
+
+export {
+  CATEGORY_STATUSES,
+  INITIAL_CATEGORY_STATUS,
+  isCategoryStatus,
+} from './domain/category/category-status.js';
+
+export type {
+  CategoryStatus,
+} from './domain/category/category-status.js';
+
+export {
+  Category,
+  CATEGORY_AGGREGATE_TYPE,
+} from './domain/category/category.js';
+
+export type {
+  CreateCategoryInput,
+  CategoryCreationDependencies,
+} from './domain/category/category.js';
+
+export type {
+  CategoryRepository,
+} from './application/ports/category-repository.js';
+
+export {
+  PostgresCategoryRepository,
+} from './infrastructure/postgres/postgres-category-repository.js';
+
+export {
+  CategoryNameAlreadyExistsError,
+} from './domain/category/category-name-already-exists-error.js';
+
+export type {
+  CreateCategoryCommand,
+} from './application/create-category/create-category-command.js';
+
+export type {
+  CreateCategoryResult,
+} from './application/create-category/create-category-result.js';
+
+export {
+  CreateCategoryHandler,
+} from './application/create-category/create-category-handler.js';
+
+export type {
+  CreateCategoryHandlerDependencies,
+} from './application/create-category/create-category-handler.js';
+
+export type {
+  CategoryReadModel,
+  CategoryReadRepository,
+} from './application/ports/category-read-repository.js';
+
+export {
+  GetCategoriesHandler,
+} from './application/get-categories/get-categories-handler.js';
+
+export type {
+  GetCategoriesQuery,
+} from './application/get-categories/get-categories-handler.js';
+
+export {
+  PostgresCategoryReadRepository,
+} from './infrastructure/postgres/postgres-category-read-repository.js';

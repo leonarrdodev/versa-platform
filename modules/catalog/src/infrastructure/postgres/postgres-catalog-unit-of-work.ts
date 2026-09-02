@@ -8,6 +8,10 @@ import type {
 } from '../../application/ports/catalog-unit-of-work.js';
 
 import {
+  PostgresCategoryRepository,
+} from './postgres-category-repository.js';
+
+import {
   PostgresOutboxRepository,
 } from './postgres-outbox-repository.js';
 
@@ -38,6 +42,11 @@ implements CatalogUnitOfWork {
 
       const transaction:
         CatalogTransaction = {
+          categories:
+            new PostgresCategoryRepository(
+              client,
+            ),
+
           products:
             new PostgresProductRepository(
               client,
@@ -49,9 +58,10 @@ implements CatalogUnitOfWork {
             ),
         };
 
-      const result = await work(
-        transaction,
-      );
+      const result =
+        await work(
+          transaction,
+        );
 
       await client.query('COMMIT');
 
@@ -60,7 +70,9 @@ implements CatalogUnitOfWork {
       return result;
     } catch (error) {
       if (transactionStarted) {
-        await client.query('ROLLBACK');
+        await client.query(
+          'ROLLBACK',
+        );
       }
 
       throw error;

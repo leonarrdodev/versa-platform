@@ -25,6 +25,14 @@ import type {
 } from './routes/auth.route.js';
 
 import {
+  createCategoriesRoute,
+} from './routes/categories.route.js';
+
+import type {
+  CategoriesRouteDependencies,
+} from './routes/categories.route.js';
+
+import {
   healthRoute,
 } from './routes/health.route.js';
 
@@ -39,6 +47,11 @@ import type {
 type CatalogRouteDependencies =
   Omit<
     ProductsRouteDependencies,
+    'requireAuthentication'
+  >
+  &
+  Omit<
+    CategoriesRouteDependencies,
     'requireAuthentication'
   >;
 
@@ -117,7 +130,7 @@ export function buildApp(
    * exposto sem Identity.
    *
    * Isso evita iniciar por engano
-   * endpoints de Product sem
+   * endpoints de Catalog sem
    * autenticação.
    */
   if (
@@ -142,6 +155,14 @@ export function buildApp(
 
     app.register(
       createProductsRoute({
+        ...options.catalog,
+
+        requireAuthentication,
+      }),
+    );
+
+    app.register(
+      createCategoriesRoute({
         ...options.catalog,
 
         requireAuthentication,

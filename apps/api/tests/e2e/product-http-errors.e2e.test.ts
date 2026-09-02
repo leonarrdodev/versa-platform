@@ -3,13 +3,15 @@ import {
 } from 'node:crypto';
 
 import {
+  CreateCategoryHandler,
   CreateProductHandler,
+  GetCategoriesHandler,
   GetProductByIdHandler,
   GetProductsHandler,
   PostgresCatalogUnitOfWork,
+  PostgresCategoryReadRepository,
   PostgresProductReadRepository,
 } from '@versa/catalog';
-
 import {
   createDatabasePool,
 } from '@versa/database';
@@ -60,6 +62,11 @@ import type {
   AuthenticatedIdentity,
 } from './helpers/authenticated-identity.js';
 
+import {
+  cleanupTenantCatalog,
+  createTestCategory,
+} from './helpers/catalog-fixtures.js';
+
 const logger:
 Logger = {
   log() {},
@@ -102,6 +109,15 @@ beforeAll(
         pool,
       );
 
+    const createCategoryHandler =
+      new CreateCategoryHandler({
+        clock,
+
+        idGenerator,
+
+        unitOfWork,
+      });
+
     const createProductHandler =
       new CreateProductHandler({
         clock,
@@ -115,6 +131,16 @@ beforeAll(
       new PostgresProductReadRepository(
         pool,
       );
+
+      const categoryReadRepository =
+  new PostgresCategoryReadRepository(
+    pool,
+  );
+
+const getCategoriesHandler =
+  new GetCategoriesHandler(
+    categoryReadRepository,
+  );
 
     const getProductByIdHandler =
       new GetProductByIdHandler(
@@ -139,39 +165,43 @@ beforeAll(
         applicationLogger:
           logger,
 
-        catalog: {
-          createProductHandler,
+       catalog: {
+  createCategoryHandler,
 
-          getProductByIdHandler,
+  createProductHandler,
 
-          getProductsHandler,
+  getCategoriesHandler,
 
-          idGenerator,
+  getProductByIdHandler,
 
-          logger,
+  getProductsHandler,
 
-          monotonicClock,
-        },
+  idGenerator,
 
-      identity: {
-  signInHandler:
-    identity.signInHandler,
+  logger,
 
-  resolveSessionHandler:
-    identity.resolveSessionHandler,
-
-  revokeSessionHandler:
-    identity.revokeSessionHandler,
-
-  listAvailableTenantsHandler:
-    identity.listAvailableTenantsHandler,
-
-  setActiveTenantHandler:
-    identity.setActiveTenantHandler,
-
-  secureCookies:
-    false,
+  monotonicClock,
 },
+
+        identity: {
+          signInHandler:
+            identity.signInHandler,
+
+          resolveSessionHandler:
+            identity.resolveSessionHandler,
+
+          revokeSessionHandler:
+            identity.revokeSessionHandler,
+
+          listAvailableTenantsHandler:
+            identity.listAvailableTenantsHandler,
+
+          setActiveTenantHandler:
+            identity.setActiveTenantHandler,
+
+          secureCookies:
+            false,
+        },
       });
 
     await app.ready();
@@ -185,44 +215,6 @@ afterAll(
     await pool.end();
   },
 );
-
-async function cleanupTenantProducts(
-  tenantId:
-    string,
-): Promise<void> {
-  await pool.query(
-    `
-      DELETE
-      FROM product_read_model
-      WHERE tenant_id = $1
-    `,
-    [
-      tenantId,
-    ],
-  );
-
-  await pool.query(
-    `
-      DELETE
-      FROM event_outbox
-      WHERE tenant_id = $1
-    `,
-    [
-      tenantId,
-    ],
-  );
-
-  await pool.query(
-    `
-      DELETE
-      FROM products
-      WHERE tenant_id = $1
-    `,
-    [
-      tenantId,
-    ],
-  );
-}
 
 describe(
   'Product HTTP error contracts',
@@ -304,6 +296,14 @@ describe(
                 name:
                   'Produto teste',
 
+                /*
+                 * Não precisamos criar
+                 * uma Category real aqui.
+                 *
+                 * O SKU é rejeitado pelo
+                 * domínio antes da
+                 * persistência.
+                 */
                 categoryId:
                   randomUUID(),
               },
@@ -327,7 +327,8 @@ describe(
             identity !==
             null
           ) {
-            await cleanupTenantProducts(
+            await cleanupTenantCatalog(
+              pool,
               identity.tenantId,
             );
 
@@ -390,7 +391,8 @@ describe(
             identity !==
             null
           ) {
-            await cleanupTenantProducts(
+            await cleanupTenantCatalog(
+              pool,
               identity.tenantId,
             );
 
@@ -413,9 +415,6 @@ describe(
         let identityB:
           AuthenticatedIdentity | null =
             null;
-
-        const categoryId =
-          randomUUID();
 
         const sku =
           `SKU-${randomUUID()}`
@@ -443,6 +442,37 @@ describe(
             });
 
           /*
+           * Cada tenant precisa de sua
+           * própria Category.
+           *
+           * A FK composta de Product
+           * garante que uma Category
+           * pertencente ao Tenant A não
+           * possa ser usada pelo B.
+           */
+          const categoryAId =
+            await createTestCategory({
+              pool,
+
+              tenantId:
+                identityA.tenantId,
+
+              name:
+                'Categoria A',
+            });
+
+          const categoryBId =
+            await createTestCategory({
+              pool,
+
+              tenantId:
+                identityB.tenantId,
+
+              name:
+                'Categoria B',
+            });
+
+          /*
            * Primeiro cadastro no
            * Tenant A.
            */
@@ -465,7 +495,8 @@ describe(
                 name:
                   'Produto A',
 
-                categoryId,
+                categoryId:
+                  categoryAId,
               },
             });
 
@@ -497,7 +528,8 @@ describe(
                 name:
                   'Produto duplicado',
 
-                categoryId,
+                categoryId:
+                  categoryAId,
               },
             });
 
@@ -539,7 +571,8 @@ describe(
                 name:
                   'Produto B',
 
-                categoryId,
+                categoryId:
+                  categoryBId,
               },
             });
 
@@ -581,7 +614,8 @@ describe(
             identityA !==
             null
           ) {
-            await cleanupTenantProducts(
+            await cleanupTenantCatalog(
+              pool,
               identityA.tenantId,
             );
 
@@ -595,7 +629,8 @@ describe(
             identityB !==
             null
           ) {
-            await cleanupTenantProducts(
+            await cleanupTenantCatalog(
+              pool,
               identityB.tenantId,
             );
 
@@ -658,7 +693,8 @@ describe(
             identity !==
             null
           ) {
-            await cleanupTenantProducts(
+            await cleanupTenantCatalog(
+              pool,
               identity.tenantId,
             );
 

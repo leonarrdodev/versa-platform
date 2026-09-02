@@ -1,6 +1,11 @@
 import {
+  CATEGORY_CREATED_EVENT_NAME,
   PRODUCT_CREATED_EVENT_NAME,
 } from '@versa/event-contracts';
+
+import {
+  acknowledgeCategoryCreated,
+} from './acknowledge-category-created.js';
 
 import type {
   ExecutionContext,
@@ -92,6 +97,13 @@ async function dispatchEvent(
     case PRODUCT_CREATED_EVENT_NAME:
       await projectProductCreated(
         client,
+        event,
+      );
+
+      return;
+
+    case CATEGORY_CREATED_EVENT_NAME:
+      acknowledgeCategoryCreated(
         event,
       );
 

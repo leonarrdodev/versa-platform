@@ -1,4 +1,6 @@
 import {
+  CATEGORY_CREATED_EVENT_NAME,
+  CATEGORY_CREATED_EVENT_VERSION,
   PRODUCT_CREATED_EVENT_NAME,
 } from '@versa/event-contracts';
 
@@ -152,6 +154,39 @@ OutboxEventRow {
   };
 }
 
+function createCategoryCreatedEvent():
+OutboxEventRow {
+  return {
+    ...createValidEvent(),
+
+    aggregateType:
+      'Category',
+
+    aggregateId:
+      CATEGORY_ID,
+
+    eventName:
+      CATEGORY_CREATED_EVENT_NAME,
+
+    eventVersion:
+      CATEGORY_CREATED_EVENT_VERSION,
+
+    payload: {
+      categoryId:
+        CATEGORY_ID,
+
+      name:
+        'Blusas',
+
+      status:
+        'active',
+
+      createdAt:
+        '2026-08-15T00:00:00.000Z',
+    },
+  };
+}
+
 interface RecordedQuery {
   readonly sql:
     string;
@@ -279,11 +314,7 @@ describe(
 
             monotonicClock,
 
-            retryPolicy: {
-  maxAttempts: 5,
-  baseDelayMs: 1_000,
-  maxDelayMs: 60_000,
-},
+            retryPolicy,
           });
 
         expect(
@@ -420,14 +451,269 @@ describe(
     );
 
     it(
+      'acknowledges CategoryCreated without creating a product projection',
+      async () => {
+        const event =
+          createCategoryCreatedEvent();
+
+        const {
+          pool,
+          client,
+          queries,
+        } =
+          createDatabaseMocks(
+            event,
+          );
+
+        const processed =
+          await processNextOutboxEvent({
+            pool,
+
+            idGenerator,
+
+            logger,
+
+            monotonicClock,
+
+            retryPolicy,
+          });
+
+        expect(
+          processed,
+        ).toBe(true);
+
+        /*
+         * CategoryCreated é um evento
+         * reconhecido pelo worker,
+         * mas não possui projeção
+         * própria neste momento.
+         */
+        const productProjectionQuery =
+          findQuery(
+            queries,
+            'INSERT INTO product_read_model',
+          );
+
+        expect(
+          productProjectionQuery,
+        ).toBeUndefined();
+
+        /*
+         * Mesmo sem uma projeção,
+         * o evento foi consumido
+         * corretamente.
+         */
+        const completedQuery =
+          queries.find(
+            (query) =>
+              query.sql.includes(
+                'UPDATE event_outbox',
+              ) &&
+              query.sql.includes(
+                'processed_at = now()',
+              ),
+          );
+
+        expect(
+          completedQuery,
+        ).toBeDefined();
+
+        expect(
+          completedQuery?.sql,
+        ).toContain(
+          'processing_attempts',
+        );
+
+        expect(
+          completedQuery?.sql,
+        ).toContain(
+          'last_error = NULL',
+        );
+
+        expect(
+          completedQuery?.sql,
+        ).toContain(
+          'next_attempt_at = NULL',
+        );
+
+        expect(
+          completedQuery?.values,
+        ).toEqual([
+          EVENT_ID,
+        ]);
+
+        /*
+         * Nenhum retry deve ser
+         * criado para um evento
+         * conhecido e válido.
+         */
+        const retryQuery =
+          queries.find(
+            (query) =>
+              query.sql.includes(
+                'UPDATE event_outbox',
+              ) &&
+              query.sql.includes(
+                "interval '1 millisecond'",
+              ),
+          );
+
+        expect(
+          retryQuery,
+        ).toBeUndefined();
+
+        expect(
+          client.release,
+        ).toHaveBeenCalledOnce();
+      },
+    );
+
+    it(
+      'rejects an unsupported CategoryCreated version and schedules a retry',
+      async () => {
+        const unsupportedVersion =
+          CATEGORY_CREATED_EVENT_VERSION +
+          1;
+
+        const event:
+          OutboxEventRow = {
+            ...createCategoryCreatedEvent(),
+
+            eventVersion:
+              unsupportedVersion,
+          };
+
+        const {
+          pool,
+          client,
+          queries,
+        } =
+          createDatabaseMocks(
+            event,
+          );
+
+        await expect(
+          processNextOutboxEvent({
+            pool,
+
+            idGenerator,
+
+            logger,
+
+            monotonicClock,
+
+            retryPolicy,
+          }),
+        ).rejects.toThrow(
+          `Versão CategoryCreated não suportada: ${unsupportedVersion}`,
+        );
+
+        /*
+         * Uma versão desconhecida
+         * jamais pode ser marcada
+         * como processada.
+         */
+        const completedQuery =
+          queries.find(
+            (query) =>
+              query.sql.includes(
+                'UPDATE event_outbox',
+              ) &&
+              query.sql.includes(
+                'processed_at = now()',
+              ),
+          );
+
+        expect(
+          completedQuery,
+        ).toBeUndefined();
+
+        /*
+         * Como é a primeira falha,
+         * ainda existe possibilidade
+         * de retry.
+         */
+        const retryQuery =
+          queries.find(
+            (query) =>
+              query.sql.includes(
+                'UPDATE event_outbox',
+              ) &&
+              query.sql.includes(
+                "interval '1 millisecond'",
+              ),
+          );
+
+        expect(
+          retryQuery,
+        ).toBeDefined();
+
+        expect(
+          retryQuery?.sql,
+        ).toContain(
+          'processing_attempts',
+        );
+
+        expect(
+          retryQuery?.sql,
+        ).toContain(
+          'last_error = $2',
+        );
+
+        expect(
+          retryQuery?.values,
+        ).toEqual([
+          EVENT_ID,
+
+          `Versão CategoryCreated não suportada: ${unsupportedVersion}`,
+
+          1_000,
+        ]);
+
+        /*
+         * Qualquer alteração feita
+         * durante o processamento
+         * precisa ser revertida
+         * antes de registrar o retry.
+         */
+        expect(
+          queries.some(
+            (query) =>
+              query.sql.includes(
+                'ROLLBACK TO SAVEPOINT event_processing',
+              ),
+          ),
+        ).toBe(true);
+
+        /*
+         * O estado de retry precisa
+         * sobreviver à transação.
+         */
+        expect(
+          queries.some(
+            (query) =>
+              query.sql.includes(
+                'COMMIT',
+              ),
+          ),
+        ).toBe(true);
+
+        expect(
+          client.release,
+        ).toHaveBeenCalledOnce();
+      },
+    );
+
+    it(
       'records the failure and schedules a retry without marking the event as processed',
       async () => {
-        const event: OutboxEventRow = {
-          ...createValidEvent(),
+        const event:
+          OutboxEventRow = {
+            ...createValidEvent(),
 
-          eventName:
-            'UnsupportedEvent',
-        };
+            eventName:
+              'UnsupportedEvent',
+          };
 
         const {
           pool,
