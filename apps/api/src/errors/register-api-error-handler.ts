@@ -1,5 +1,6 @@
 import {
   CategoryNameAlreadyExistsError,
+  ProductCategoryNotAvailableError,
   ProductSkuAlreadyExistsError,
 } from '@versa/catalog';
 
@@ -119,13 +120,6 @@ export function registerApiErrorHandler(
           });
       }
 
-      /*
-       * Cookie ausente, sessão
-       * desconhecida, adulterada,
-       * expirada, revogada ou com
-       * identidade atualmente
-       * indisponível.
-       */
       if (
         error instanceof
           InvalidSessionError
@@ -141,17 +135,6 @@ export function registerApiErrorHandler(
           });
       }
 
-      /*
-       * Usuário autenticado tentou
-       * selecionar uma empresa que
-       * não está disponível para
-       * esta sessão.
-       *
-       * Não revelamos se a empresa
-       * existe, está suspensa ou se
-       * simplesmente não pertence
-       * ao usuário.
-       */
       if (
         error instanceof
           ActiveTenantNotAllowedError
@@ -167,10 +150,6 @@ export function registerApiErrorHandler(
           });
       }
 
-      /*
-       * Usuário autenticado, mas sem
-       * uma empresa ativa selecionada.
-       */
       if (
         error instanceof
           ActiveTenantRequiredError
@@ -187,19 +166,41 @@ export function registerApiErrorHandler(
       }
 
       if (
-  error instanceof
-    CategoryNameAlreadyExistsError
-) {
-  return reply
-    .code(409)
-    .send({
-      code:
-        'CATEGORY_NAME_ALREADY_EXISTS',
+        error instanceof
+          CategoryNameAlreadyExistsError
+      ) {
+        return reply
+          .code(409)
+          .send({
+            code:
+              'CATEGORY_NAME_ALREADY_EXISTS',
 
-      message:
-        'Já existe uma categoria com este nome.',
-    });
-}
+            message:
+              'Já existe uma categoria com este nome.',
+          });
+      }
+
+      /*
+       * Não revelamos se:
+       *
+       * - a Category não existe;
+       * - pertence a outro tenant;
+       * - está archived.
+       */
+      if (
+        error instanceof
+          ProductCategoryNotAvailableError
+      ) {
+        return reply
+          .code(409)
+          .send({
+            code:
+              'PRODUCT_CATEGORY_NOT_AVAILABLE',
+
+            message:
+              'A categoria selecionada não está disponível.',
+          });
+      }
 
       if (
         error instanceof

@@ -14,27 +14,44 @@ import {
   CategoryNameAlreadyExistsError,
 } from '../../domain/category/category-name-already-exists-error.js';
 
+import type {
+  CategoryId,
+} from '../../domain/identifiers/category-id.js';
+
+import type {
+  TenantId,
+} from '../../domain/identifiers/tenant-id.js';
+
 const CATEGORY_TENANT_NAME_UNIQUE_CONSTRAINT =
   'categories_tenant_name_unique';
 
 function isTenantNameUniqueViolation(
-  error: unknown,
+  error:
+    unknown,
 ): boolean {
   if (
-    typeof error !== 'object' ||
-    error === null
+    typeof error !==
+      'object'
+    ||
+    error ===
+      null
   ) {
     return false;
   }
 
   const candidate =
     error as {
-      code?: unknown;
-      constraint?: unknown;
+      code?:
+        unknown;
+
+      constraint?:
+        unknown;
     };
 
   return (
-    candidate.code === '23505' &&
+    candidate.code ===
+      '23505'
+    &&
     candidate.constraint ===
       CATEGORY_TENANT_NAME_UNIQUE_CONSTRAINT
   );
@@ -48,7 +65,8 @@ implements CategoryRepository {
   ) {}
 
   async insert(
-    category: Category,
+    category:
+      Category,
   ): Promise<void> {
     try {
       await this.client.query(
@@ -93,5 +111,42 @@ implements CategoryRepository {
 
       throw error;
     }
+  }
+
+  async isActiveById(
+    tenantId:
+      TenantId,
+
+    categoryId:
+      CategoryId,
+  ): Promise<boolean> {
+    const result =
+      await this.client.query<{
+        id:
+          string;
+      }>(
+        `
+          SELECT
+            id
+
+          FROM categories
+
+          WHERE
+            tenant_id = $1
+            AND id = $2
+            AND status = 'active'
+
+          FOR SHARE
+        `,
+        [
+          tenantId,
+          categoryId,
+        ],
+      );
+
+    return (
+      result.rowCount ===
+      1
+    );
   }
 }

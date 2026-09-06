@@ -119,14 +119,6 @@ export function CreateProductPanel({
       string | null
     >(null);
 
-  /*
-   * Mantém a seleção coerente com a
-   * lista atual.
-   *
-   * Se existir apenas uma categoria,
-   * ela pode ser selecionada
-   * automaticamente.
-   */
   useEffect(
     () => {
       if (
@@ -237,34 +229,34 @@ export function CreateProductPanel({
     );
   }
 
-function handleClose():
-void {
-  if (
-    busy
-  ) {
-    return;
+  function handleClose():
+  void {
+    if (
+      busy
+    ) {
+      return;
+    }
+
+    setNewCategoryOpen(
+      false,
+    );
+
+    setNewCategoryName('');
+
+    setCategoryCreationError(
+      null,
+    );
+
+    setError(
+      null,
+    );
+
+    setStatus(
+      null,
+    );
+
+    onClose();
   }
-
-  setNewCategoryOpen(
-    false,
-  );
-
-  setNewCategoryName('');
-
-  setCategoryCreationError(
-    null,
-  );
-
-  setError(
-    null,
-  );
-
-  setStatus(
-    null,
-  );
-
-  onClose();
-}
 
   async function handleCreateCategory():
   Promise<void> {
@@ -302,11 +294,6 @@ void {
             newCategoryName,
         });
 
-      /*
-       * Recarregamos pelo GET real
-       * para manter o select alinhado
-       * com a fonte de verdade.
-       */
       const refreshedCategories =
         await reloadCategories();
 
@@ -329,12 +316,6 @@ void {
         return;
       }
 
-      /*
-       * POST funcionou, mas o refresh
-       * não conseguiu recuperar a nova
-       * Category. Não tentamos criá-la
-       * novamente automaticamente.
-       */
       setNewCategoryOpen(
         false,
       );
@@ -426,23 +407,31 @@ void {
 
       await onCreated();
 
-   setSku('');
+      /*
+       * Mantemos o painel aberto
+       * para cadastro sequencial.
+       *
+       * Nome e SKU são limpos,
+       * mas Category permanece
+       * selecionada.
+       */
+      setSku('');
 
-setName('');
+      setName('');
 
-setNewCategoryOpen(
-  false,
-);
+      setNewCategoryOpen(
+        false,
+      );
 
-setNewCategoryName('');
+      setNewCategoryName('');
 
-setError(
-  null,
-);
+      setError(
+        null,
+      );
 
-setStatus(
-  'Produto cadastrado com sucesso!',
-);
+      setStatus(
+        'Produto cadastrado com sucesso. Você pode cadastrar o próximo.',
+      );
     } catch (error) {
       if (
         error instanceof
@@ -454,6 +443,33 @@ setStatus(
         ) {
           setError(
             'Já existe um produto com este SKU.',
+          );
+
+          return;
+        }
+
+        if (
+          error.code ===
+          'PRODUCT_CATEGORY_NOT_AVAILABLE'
+        ) {
+          /*
+           * A Category pode ter sido
+           * arquivada ou removida
+           * depois que o formulário
+           * carregou.
+           *
+           * Recarregamos a fonte de
+           * verdade e deixamos o
+           * useEffect corrigir uma
+           * seleção que não exista
+           * mais.
+           */
+          await reloadCategories();
+
+          setCategoryId('');
+
+          setError(
+            'A categoria selecionada não está mais disponível. Selecione outra categoria e tente novamente.',
           );
 
           return;
@@ -651,6 +667,10 @@ setStatus(
               onChange={(event) => {
                 setCategoryId(
                   event.target.value,
+                );
+
+                setError(
+                  null,
                 );
               }}
               disabled={

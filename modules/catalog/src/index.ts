@@ -116,6 +116,10 @@ export {
 } from './domain/product/product-sku-already-exists-error.js';
 
 export {
+  ProductCategoryNotAvailableError,
+} from './domain/product/product-category-not-available-error.js';
+
+export {
   GetProductsHandler,
 } from './application/get-products/get-products-handler.js';
 

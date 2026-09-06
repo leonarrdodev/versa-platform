@@ -1,4 +1,6 @@
 import {
+  CategoryNameAlreadyExistsError,
+  ProductCategoryNotAvailableError,
   ProductSkuAlreadyExistsError,
 } from '@versa/catalog';
 
@@ -23,13 +25,23 @@ import {
   registerApiErrorHandler,
 } from './register-api-error-handler.js';
 
-function createLogger(): Logger {
+function createLogger():
+Logger {
   return {
-    log: vi.fn(),
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
+    log:
+      vi.fn(),
+
+    debug:
+      vi.fn(),
+
+    info:
+      vi.fn(),
+
+    warn:
+      vi.fn(),
+
+    error:
+      vi.fn(),
   };
 }
 
@@ -39,9 +51,11 @@ describe(
     it(
       'returns 400 for Fastify validation errors',
       async () => {
-        const app = Fastify({
-          logger: false,
-        });
+        const app =
+          Fastify({
+            logger:
+              false,
+          });
 
         registerApiErrorHandler(
           app,
@@ -52,7 +66,8 @@ describe(
           {
             schema: {
               body: {
-                type: 'object',
+                type:
+                  'object',
 
                 required: [
                   'name',
@@ -60,7 +75,8 @@ describe(
 
                 properties: {
                   name: {
-                    type: 'string',
+                    type:
+                      'string',
                   },
                 },
               },
@@ -68,15 +84,21 @@ describe(
           },
 
           async () => ({
-            ok: true,
+            ok:
+              true,
           }),
         );
 
         const response =
           await app.inject({
-            method: 'POST',
-            url: '/test',
-            payload: {},
+            method:
+              'POST',
+
+            url:
+              '/test',
+
+            payload:
+              {},
           });
 
         expect(
@@ -100,9 +122,11 @@ describe(
     it(
       'returns 400 for InvalidValueError',
       async () => {
-        const app = Fastify({
-          logger: false,
-        });
+        const app =
+          Fastify({
+            logger:
+              false,
+          });
 
         registerApiErrorHandler(
           app,
@@ -119,8 +143,11 @@ describe(
 
         const response =
           await app.inject({
-            method: 'GET',
-            url: '/test',
+            method:
+              'GET',
+
+            url:
+              '/test',
           });
 
         expect(
@@ -148,11 +175,119 @@ describe(
     );
 
     it(
+      'returns 409 for duplicate category name',
+      async () => {
+        const app =
+          Fastify({
+            logger:
+              false,
+          });
+
+        registerApiErrorHandler(
+          app,
+        );
+
+        app.get(
+          '/test',
+          async () => {
+            throw new CategoryNameAlreadyExistsError();
+          },
+        );
+
+        const response =
+          await app.inject({
+            method:
+              'GET',
+
+            url:
+              '/test',
+          });
+
+        expect(
+          response.statusCode,
+        ).toBe(409);
+
+        expect(
+          response.json(),
+        ).toEqual({
+          code:
+            'CATEGORY_NAME_ALREADY_EXISTS',
+
+          message:
+            'Já existe uma categoria com este nome.',
+        });
+
+        await app.close();
+      },
+    );
+
+    it(
+      'returns 409 without revealing why a product category is unavailable',
+      async () => {
+        const app =
+          Fastify({
+            logger:
+              false,
+          });
+
+        registerApiErrorHandler(
+          app,
+        );
+
+        app.get(
+          '/test',
+          async () => {
+            throw new ProductCategoryNotAvailableError();
+          },
+        );
+
+        const response =
+          await app.inject({
+            method:
+              'GET',
+
+            url:
+              '/test',
+          });
+
+        expect(
+          response.statusCode,
+        ).toBe(409);
+
+        expect(
+          response.json(),
+        ).toEqual({
+          code:
+            'PRODUCT_CATEGORY_NOT_AVAILABLE',
+
+          message:
+            'A categoria selecionada não está disponível.',
+        });
+
+        expect(
+          response.body,
+        ).not.toContain(
+          'archived',
+        );
+
+        expect(
+          response.body,
+        ).not.toContain(
+          'tenant',
+        );
+
+        await app.close();
+      },
+    );
+
+    it(
       'returns 409 for duplicate product SKU',
       async () => {
-        const app = Fastify({
-          logger: false,
-        });
+        const app =
+          Fastify({
+            logger:
+              false,
+          });
 
         registerApiErrorHandler(
           app,
@@ -167,8 +302,11 @@ describe(
 
         const response =
           await app.inject({
-            method: 'GET',
-            url: '/test',
+            method:
+              'GET',
+
+            url:
+              '/test',
           });
 
         expect(
@@ -192,9 +330,11 @@ describe(
     it(
       'returns generic 500 without leaking internal details',
       async () => {
-        const app = Fastify({
-          logger: false,
-        });
+        const app =
+          Fastify({
+            logger:
+              false,
+          });
 
         const logger =
           createLogger();
@@ -215,8 +355,11 @@ describe(
 
         const response =
           await app.inject({
-            method: 'GET',
-            url: '/test',
+            method:
+              'GET',
+
+            url:
+              '/test',
           });
 
         expect(

@@ -20,6 +20,10 @@ import {
 } from '../../domain/product/product.js';
 
 import {
+  ProductCategoryNotAvailableError,
+} from '../../domain/product/product-category-not-available-error.js';
+
+import {
   ProductName,
 } from '../../domain/product/product-name.js';
 
@@ -40,9 +44,14 @@ import type {
 } from './create-product-result.js';
 
 export interface CreateProductHandlerDependencies {
-  readonly clock: Clock;
-  readonly idGenerator: IdGenerator;
-  readonly unitOfWork: CatalogUnitOfWork;
+  readonly clock:
+    Clock;
+
+  readonly idGenerator:
+    IdGenerator;
+
+  readonly unitOfWork:
+    CatalogUnitOfWork;
 }
 
 export class CreateProductHandler {
@@ -52,83 +61,151 @@ export class CreateProductHandler {
   ) {}
 
   async execute(
-    command: CreateProductCommand,
-    context: ExecutionContext,
-  ): Promise<CreateProductResult> {
-    const tenantId = parseTenantId(
-      command.tenantId,
-    );
+    command:
+      CreateProductCommand,
+
+    context:
+      ExecutionContext,
+  ): Promise<
+    CreateProductResult
+  > {
+    /*
+     * Validações puramente locais
+     * acontecem antes da transação.
+     *
+     * Assim um comando malformado
+     * não abre conexão/transação
+     * desnecessariamente.
+     */
+    const tenantId =
+      parseTenantId(
+        command.tenantId,
+      );
 
     const categoryId =
       parseCategoryId(
         command.categoryId,
       );
 
-    const sku = ProductSku.create(
-      command.sku,
-    );
+    const sku =
+      ProductSku.create(
+        command.sku,
+      );
 
-    const name = ProductName.create(
-      command.name,
-    );
+    const name =
+      ProductName.create(
+        command.name,
+      );
 
-    const product = Product.create(
-      {
-        tenantId,
-        categoryId,
-        sku,
-        name,
-      },
-      {
-        clock:
-          this.dependencies.clock,
-
-        idGenerator:
-          this.dependencies.idGenerator,
-
-        eventContext: {
-          correlationId:
-            context.correlationId,
-
-          causationId:
-            context.executionId,
-        },
-      },
-    );
-
-    const events =
-      product.pullDomainEvents();
-
-    await this.dependencies
+    return this.dependencies
       .unitOfWork
       .execute(
-        async (transaction) => {
+        async (
+          transaction,
+        ) => {
+          /*
+           * Essa validação ocorre
+           * DENTRO da mesma transação
+           * que persistirá Product
+           * e ProductCreated.
+           *
+           * O repository PostgreSQL
+           * também bloqueia a Category
+           * com FOR SHARE enquanto
+           * esta transação existir.
+           */
+          const categoryAvailable =
+            await transaction
+              .categories
+              .isActiveById(
+                tenantId,
+                categoryId,
+              );
+
+          if (
+            !categoryAvailable
+          ) {
+            throw new ProductCategoryNotAvailableError();
+          }
+
+          /*
+           * Só geramos Product e
+           * ProductCreated depois de
+           * confirmar a Category.
+           */
+          const product =
+            Product.create(
+              {
+                tenantId,
+                categoryId,
+                sku,
+                name,
+              },
+              {
+                clock:
+                  this.dependencies
+                    .clock,
+
+                idGenerator:
+                  this.dependencies
+                    .idGenerator,
+
+                eventContext: {
+                  correlationId:
+                    context
+                      .correlationId,
+
+                  causationId:
+                    context
+                      .executionId,
+                },
+              },
+            );
+
+          const events =
+            product
+              .pullDomainEvents();
+
           await transaction
             .products
-            .insert(product);
+            .insert(
+              product,
+            );
 
           await transaction
             .outbox
-            .append(events);
+            .append(
+              events,
+            );
+
+          return {
+            id:
+              product.id,
+
+            tenantId:
+              product.tenantId,
+
+            sku:
+              product.sku.value,
+
+            name:
+              product.name.value,
+
+            categoryId:
+              product.categoryId,
+
+            status:
+              product.status,
+
+            createdAt:
+              product.createdAt
+                .toISOString(),
+
+            updatedAt:
+              product.updatedAt
+                .toISOString(),
+          };
         },
       );
-
-    return {
-      id: product.id,
-      tenantId: product.tenantId,
-      sku: product.sku.value,
-      name: product.name.value,
-      categoryId:
-        product.categoryId,
-      status: product.status,
-
-      createdAt:
-        product.createdAt
-          .toISOString(),
-
-      updatedAt:
-        product.updatedAt
-          .toISOString(),
-    };
   }
 }
