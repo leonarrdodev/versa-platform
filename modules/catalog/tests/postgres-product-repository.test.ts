@@ -65,14 +65,16 @@ describe('PostgresProductRepository', () => {
     );
 
     expect(values).toEqual([
-      PRODUCT_ID,
-      TENANT_ID,
-      'BLUSA-001',
-      'Blusa Canelada Feminina',
-      CATEGORY_ID,
-      'draft',
-      FIXED_DATE,
-      FIXED_DATE,
-    ]);
+  PRODUCT_ID,
+  TENANT_ID,
+  'BLUSA-001',
+  'Blusa Canelada Feminina',
+  null,
+  null,
+  CATEGORY_ID,
+  'draft',
+  FIXED_DATE,
+  FIXED_DATE,
+]);
   });
 });

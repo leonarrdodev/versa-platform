@@ -18,23 +18,32 @@ const PRODUCT_TENANT_SKU_UNIQUE_CONSTRAINT =
   'products_tenant_sku_unique';
 
 function isTenantSkuUniqueViolation(
-  error: unknown,
+  error:
+    unknown,
 ): boolean {
   if (
-    typeof error !== 'object' ||
-    error === null
+    typeof error !==
+      'object'
+    ||
+    error ===
+      null
   ) {
     return false;
   }
 
   const candidate =
     error as {
-      code?: unknown;
-      constraint?: unknown;
+      code?:
+        unknown;
+
+      constraint?:
+        unknown;
     };
 
   return (
-    candidate.code === '23505' &&
+    candidate.code ===
+      '23505'
+    &&
     candidate.constraint ===
       PRODUCT_TENANT_SKU_UNIQUE_CONSTRAINT
   );
@@ -48,7 +57,8 @@ implements ProductRepository {
   ) {}
 
   async insert(
-    product: Product,
+    product:
+      Product,
   ): Promise<void> {
     try {
       await this.client.query(
@@ -58,6 +68,8 @@ implements ProductRepository {
             tenant_id,
             sku,
             name,
+            brand,
+            description,
             category_id,
             status,
             created_at,
@@ -71,7 +83,9 @@ implements ProductRepository {
             $5,
             $6,
             $7,
-            $8
+            $8,
+            $9,
+            $10
           )
         `,
         [
@@ -79,6 +93,15 @@ implements ProductRepository {
           product.tenantId,
           product.sku.value,
           product.name.value,
+
+          product.brand
+            ?.value ??
+            null,
+
+          product.description
+            ?.value ??
+            null,
+
           product.categoryId,
           product.status,
           product.createdAt,

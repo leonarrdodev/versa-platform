@@ -15,11 +15,15 @@ import type {
 } from './outbox-event-row.js';
 
 function parsePayload(
-  payload: unknown,
+  payload:
+    unknown,
 ): ProductCreatedPayload {
   if (
-    typeof payload !== 'object' ||
-    payload === null
+    typeof payload !==
+      'object'
+    ||
+    payload ===
+      null
   ) {
     throw new Error(
       'ProductCreated payload inválido',
@@ -36,19 +40,55 @@ function parsePayload(
     productId,
     sku,
     name,
+    brand,
+    description,
     categoryId,
     createdAt,
-  } = candidate;
+  } =
+    candidate;
 
   if (
-    typeof productId !== 'string' ||
-    typeof sku !== 'string' ||
-    typeof name !== 'string' ||
-    typeof categoryId !== 'string' ||
-    typeof createdAt !== 'string'
+    typeof productId !==
+      'string'
+    ||
+    typeof sku !==
+      'string'
+    ||
+    typeof name !==
+      'string'
+    ||
+    typeof categoryId !==
+      'string'
+    ||
+    typeof createdAt !==
+      'string'
   ) {
     throw new Error(
       'ProductCreated payload incompleto',
+    );
+  }
+
+  if (
+    brand !==
+      undefined
+    &&
+    typeof brand !==
+      'string'
+  ) {
+    throw new Error(
+      'ProductCreated brand inválida',
+    );
+  }
+
+  if (
+    description !==
+      undefined
+    &&
+    typeof description !==
+      'string'
+  ) {
+    throw new Error(
+      'ProductCreated description inválida',
     );
   }
 
@@ -56,18 +96,36 @@ function parsePayload(
     productId,
     sku,
     name,
+
+    ...(brand ===
+    undefined
+      ? {}
+      : {
+          brand,
+        }),
+
+    ...(description ===
+    undefined
+      ? {}
+      : {
+          description,
+        }),
+
     categoryId,
     createdAt,
   };
 }
 
 export async function projectProductCreated(
-  client: PoolClient,
-  event: OutboxEventRow,
+  client:
+    PoolClient,
+
+  event:
+    OutboxEventRow,
 ): Promise<void> {
   if (
     event.eventVersion !==
-    PRODUCT_CREATED_EVENT_VERSION
+      PRODUCT_CREATED_EVENT_VERSION
   ) {
     throw new Error(
       `Versão ProductCreated não suportada: ${event.eventVersion}`,
@@ -86,6 +144,8 @@ export async function projectProductCreated(
         tenant_id,
         sku,
         name,
+        brand,
+        description,
         category_id,
         status,
         created_at,
@@ -98,10 +158,12 @@ export async function projectProductCreated(
         $3,
         $4,
         $5,
+        $6,
+        $7,
         'draft',
-        $6,
-        $6,
-        $7
+        $8,
+        $8,
+        $9
       )
       ON CONFLICT (
         source_event_id
@@ -113,6 +175,13 @@ export async function projectProductCreated(
       event.tenantId,
       payload.sku,
       payload.name,
+
+      payload.brand ??
+        null,
+
+      payload.description ??
+        null,
+
       payload.categoryId,
       payload.createdAt,
       event.eventId,

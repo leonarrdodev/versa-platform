@@ -3,6 +3,13 @@ import type {
 } from 'pg';
 
 import type {
+  FindProductsOptions,
+  ProductReadModel,
+  ProductReadPage,
+  ProductReadRepository,
+} from '../../application/ports/product-read-repository.js';
+
+import type {
   ProductId,
 } from '../../domain/identifiers/product-id.js';
 
@@ -14,30 +21,44 @@ import {
   isProductStatus,
 } from '../../domain/product/product-status.js';
 
-import type {
-  FindProductsOptions,
-  ProductReadModel,
-  ProductReadPage,
-  ProductReadRepository,
-} from '../../application/ports/product-read-repository.js';
-
 interface ProductReadRow {
-  readonly id: string;
-  readonly tenantId: string;
+  readonly id:
+    string;
 
-  readonly sku: string;
-  readonly name: string;
-  readonly categoryId: string;
+  readonly tenantId:
+    string;
 
-  readonly status: string;
+  readonly sku:
+    string;
 
-  readonly createdAt: Date;
-  readonly updatedAt: Date;
-  readonly projectedAt: Date;
+  readonly name:
+    string;
+
+  readonly categoryId:
+    string;
+
+  readonly brand?:
+    string | null;
+
+  readonly description?:
+    string | null;
+
+  readonly status:
+    string;
+
+  readonly createdAt:
+    Date;
+
+  readonly updatedAt:
+    Date;
+
+  readonly projectedAt:
+    Date;
 }
 
 function mapProductReadRow(
-  row: ProductReadRow,
+  row:
+    ProductReadRow,
 ): ProductReadModel {
   if (
     !isProductStatus(
@@ -65,6 +86,22 @@ function mapProductReadRow(
     categoryId:
       row.categoryId,
 
+    ...(typeof row.brand ===
+    'string'
+      ? {
+          brand:
+            row.brand,
+        }
+      : {}),
+
+    ...(typeof row.description ===
+    'string'
+      ? {
+          description:
+            row.description,
+        }
+      : {}),
+
     status:
       row.status,
 
@@ -90,54 +127,63 @@ implements ProductReadRepository {
   ) {}
 
   async findById(
-    tenantId: TenantId,
-    productId: ProductId,
-  ): Promise<ProductReadModel | null> {
+    tenantId:
+      TenantId,
+
+    productId:
+      ProductId,
+  ): Promise<
+    ProductReadModel | null
+  > {
     const result =
-      await this.pool.query<ProductReadRow>(
-        `
-          SELECT
-            id,
+      await this.pool
+        .query<ProductReadRow>(
+          `
+            SELECT
+              id,
 
-            tenant_id
-              AS "tenantId",
+              tenant_id
+                AS "tenantId",
 
-            sku,
-            name,
+              sku,
+              name,
+              brand,
+              description,
 
-            category_id
-              AS "categoryId",
+              category_id
+                AS "categoryId",
 
-            status,
+              status,
 
-            created_at
-              AS "createdAt",
+              created_at
+                AS "createdAt",
 
-            updated_at
-              AS "updatedAt",
+              updated_at
+                AS "updatedAt",
 
-            projected_at
-              AS "projectedAt"
+              projected_at
+                AS "projectedAt"
 
-          FROM product_read_model
+            FROM product_read_model
 
-          WHERE
-            tenant_id = $1
-            AND id = $2
+            WHERE
+              tenant_id = $1
+              AND id = $2
 
-          LIMIT 1
-        `,
-        [
-          tenantId,
-          productId,
-        ],
-      );
+            LIMIT 1
+          `,
+          [
+            tenantId,
+            productId,
+          ],
+        );
 
     const row =
       result.rows[0];
 
     if (
-      row === undefined
+      row ===
+      undefined
     ) {
       return null;
     }
@@ -148,62 +194,64 @@ implements ProductReadRepository {
   }
 
   async findMany(
-    tenantId: TenantId,
-    options: FindProductsOptions,
-  ): Promise<ProductReadPage> {
-    /*
-     * Buscamos limit + 1.
-     *
-     * O item extra permite descobrir
-     * se existe outra página sem fazer
-     * um COUNT(*) separado.
-     */
+    tenantId:
+      TenantId,
+
+    options:
+      FindProductsOptions,
+  ): Promise<
+    ProductReadPage
+  > {
     const databaseLimit =
-      options.limit + 1;
+      options.limit +
+      1;
 
     const result =
-      await this.pool.query<ProductReadRow>(
-        `
-          SELECT
-            id,
+      await this.pool
+        .query<ProductReadRow>(
+          `
+            SELECT
+              id,
 
-            tenant_id
-              AS "tenantId",
+              tenant_id
+                AS "tenantId",
 
-            sku,
-            name,
+              sku,
+              name,
+              brand,
+              description,
 
-            category_id
-              AS "categoryId",
+              category_id
+                AS "categoryId",
 
-            status,
+              status,
 
-            created_at
-              AS "createdAt",
+              created_at
+                AS "createdAt",
 
-            updated_at
-              AS "updatedAt",
+              updated_at
+                AS "updatedAt",
 
-            projected_at
-              AS "projectedAt"
+              projected_at
+                AS "projectedAt"
 
-          FROM product_read_model
+            FROM product_read_model
 
-          WHERE tenant_id = $1
+            WHERE tenant_id = $1
 
-          ORDER BY
-            created_at DESC,
-            id DESC
+            ORDER BY
+              created_at DESC,
+              id DESC
 
-          LIMIT $2
-          OFFSET $3
-        `,
-        [
-          tenantId,
-          databaseLimit,
-          options.offset,
-        ],
-      );
+            LIMIT $2
+            OFFSET $3
+          `,
+          [
+            tenantId,
+            databaseLimit,
+            options.offset,
+          ],
+        );
 
     const hasMore =
       result.rows.length >

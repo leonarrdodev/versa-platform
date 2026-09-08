@@ -200,3 +200,13 @@ export type {
 export {
   PostgresCategoryReadRepository,
 } from './infrastructure/postgres/postgres-category-read-repository.js';
+
+export {
+  ProductBrand,
+  PRODUCT_BRAND_MAX_LENGTH,
+} from './domain/product/product-brand.js';
+
+export {
+  ProductDescription,
+  PRODUCT_DESCRIPTION_MAX_LENGTH,
+} from './domain/product/product-description.js';

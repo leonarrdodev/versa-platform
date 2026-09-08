@@ -11,24 +11,46 @@ import type {
 } from '../../domain/product/product-status.js';
 
 export interface ProductReadModel {
-  readonly id: string;
-  readonly tenantId: string;
+  readonly id:
+    string;
 
-  readonly sku: string;
-  readonly name: string;
-  readonly categoryId: string;
+  readonly tenantId:
+    string;
+
+  readonly sku:
+    string;
+
+  readonly name:
+    string;
+
+  readonly categoryId:
+    string;
+
+  readonly brand?:
+    string;
+
+  readonly description?:
+    string;
 
   readonly status:
     ProductStatus;
 
-  readonly createdAt: string;
-  readonly updatedAt: string;
-  readonly projectedAt: string;
+  readonly createdAt:
+    string;
+
+  readonly updatedAt:
+    string;
+
+  readonly projectedAt:
+    string;
 }
 
 export interface FindProductsOptions {
-  readonly limit: number;
-  readonly offset: number;
+  readonly limit:
+    number;
+
+  readonly offset:
+    number;
 }
 
 export interface ProductReadPage {
@@ -44,12 +66,22 @@ export interface ProductReadPage {
 
 export interface ProductReadRepository {
   findById(
-    tenantId: TenantId,
-    productId: ProductId,
-  ): Promise<ProductReadModel | null>;
+    tenantId:
+      TenantId,
+
+    productId:
+      ProductId,
+  ): Promise<
+    ProductReadModel | null
+  >;
 
   findMany(
-    tenantId: TenantId,
-    options: FindProductsOptions,
-  ): Promise<ProductReadPage>;
+    tenantId:
+      TenantId,
+
+    options:
+      FindProductsOptions,
+  ): Promise<
+    ProductReadPage
+  >;
 }

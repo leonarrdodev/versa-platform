@@ -72,6 +72,24 @@ export function CreateProductPanel({
     useState('');
 
   const [
+    brand,
+    setBrand,
+  ] =
+    useState('');
+
+  const [
+    description,
+    setDescription,
+  ] =
+    useState('');
+
+  const [
+    profileOpen,
+    setProfileOpen,
+  ] =
+    useState(false);
+
+  const [
     newCategoryOpen,
     setNewCategoryOpen,
   ] =
@@ -390,11 +408,31 @@ export function CreateProductPanel({
     );
 
     try {
+      const normalizedBrand =
+        brand.trim();
+
+      const normalizedDescription =
+        description.trim();
+
       const created =
         await createProduct({
           sku,
           name,
           categoryId,
+
+          ...(normalizedBrand.length ===
+          0
+            ? {}
+            : {
+                brand,
+              }),
+
+          ...(normalizedDescription.length ===
+          0
+            ? {}
+            : {
+                description,
+              }),
         });
 
       setStatus(
@@ -408,16 +446,22 @@ export function CreateProductPanel({
       await onCreated();
 
       /*
-       * Mantemos o painel aberto
-       * para cadastro sequencial.
+       * Cadastro sequencial:
        *
-       * Nome e SKU são limpos,
-       * mas Category permanece
-       * selecionada.
+       * Nome, SKU e descrição pertencem
+       * ao item que acabou de ser
+       * cadastrado e são limpos.
+       *
+       * Categoria e marca permanecem
+       * porque vários produtos
+       * consecutivos podem compartilhar
+       * esses dados.
        */
       setSku('');
 
       setName('');
+
+      setDescription('');
 
       setNewCategoryOpen(
         false,
@@ -452,18 +496,6 @@ export function CreateProductPanel({
           error.code ===
           'PRODUCT_CATEGORY_NOT_AVAILABLE'
         ) {
-          /*
-           * A Category pode ter sido
-           * arquivada ou removida
-           * depois que o formulário
-           * carregou.
-           *
-           * Recarregamos a fonte de
-           * verdade e deixamos o
-           * useEffect corrigir uma
-           * seleção que não exista
-           * mais.
-           */
           await reloadCategories();
 
           setCategoryId('');
@@ -937,7 +969,141 @@ export function CreateProductPanel({
             ) : null}
           </div>
 
-          {error !== null ? (
+          <section
+            className={
+              styles.optionalSection
+            }
+          >
+            <button
+              className={
+                styles.optionalToggle
+              }
+              type="button"
+              aria-expanded={
+                profileOpen
+              }
+              onClick={() => {
+                setProfileOpen(
+                  (
+                    current,
+                  ) =>
+                    !current,
+                );
+              }}
+              disabled={
+                busy
+              }
+            >
+              <div>
+                <strong>
+                  Detalhes opcionais
+                </strong>
+
+                <span>
+                  Marca e descrição do produto
+                </span>
+              </div>
+
+              <span
+                className={
+                  styles.optionalChevron
+                }
+                aria-hidden="true"
+              >
+                {profileOpen
+                  ? '−'
+                  : '+'}
+              </span>
+            </button>
+
+            {profileOpen ? (
+              <div
+                className={
+                  styles.optionalContent
+                }
+              >
+                <label
+                  className={
+                    styles.field
+                  }
+                >
+                  <span>
+                    Marca
+                  </span>
+
+                  <input
+                    value={
+                      brand
+                    }
+                    onChange={(event) => {
+                      setBrand(
+                        event.target.value,
+                      );
+                    }}
+                    placeholder="Ex.: Versa Wear"
+                    maxLength={
+                      120
+                    }
+                    disabled={
+                      busy
+                    }
+                  />
+
+                  <small>
+                    Opcional. A marca
+                    permanece no próximo
+                    cadastro para agilizar
+                    cadastros em sequência.
+                  </small>
+                </label>
+
+                <label
+                  className={
+                    styles.field
+                  }
+                >
+                  <span>
+                    Descrição
+                  </span>
+
+                  <textarea
+                    className={
+                      styles.textarea
+                    }
+                    value={
+                      description
+                    }
+                    onChange={(event) => {
+                      setDescription(
+                        event.target.value,
+                      );
+                    }}
+                    placeholder="Ex.: Blusa feminina canelada, tecido macio e modelagem confortável."
+                    maxLength={
+                      2000
+                    }
+                    disabled={
+                      busy
+                    }
+                  />
+
+                  <small
+                    className={
+                      styles.characterCount
+                    }
+                  >
+                    {
+                      description.length
+                    }
+                    /2000
+                  </small>
+                </label>
+              </div>
+            ) : null}
+          </section>
+
+          {error !==
+          null ? (
             <div
               className={
                 styles.error
@@ -948,7 +1114,8 @@ export function CreateProductPanel({
             </div>
           ) : null}
 
-          {status !== null ? (
+          {status !==
+          null ? (
             <div
               className={
                 styles.status

@@ -20,8 +20,16 @@ import {
 } from '../../domain/product/product.js';
 
 import {
+  ProductBrand,
+} from '../../domain/product/product-brand.js';
+
+import {
   ProductCategoryNotAvailableError,
 } from '../../domain/product/product-category-not-available-error.js';
+
+import {
+  ProductDescription,
+} from '../../domain/product/product-description.js';
 
 import {
   ProductName,
@@ -70,12 +78,8 @@ export class CreateProductHandler {
     CreateProductResult
   > {
     /*
-     * Validações puramente locais
-     * acontecem antes da transação.
-     *
-     * Assim um comando malformado
-     * não abre conexão/transação
-     * desnecessariamente.
+     * Tudo que é validação local
+     * ocorre antes da transação.
      */
     const tenantId =
       parseTenantId(
@@ -97,23 +101,22 @@ export class CreateProductHandler {
         command.name,
       );
 
+    const brand =
+      ProductBrand.create(
+        command.brand,
+      );
+
+    const description =
+      ProductDescription.create(
+        command.description,
+      );
+
     return this.dependencies
       .unitOfWork
       .execute(
         async (
           transaction,
         ) => {
-          /*
-           * Essa validação ocorre
-           * DENTRO da mesma transação
-           * que persistirá Product
-           * e ProductCreated.
-           *
-           * O repository PostgreSQL
-           * também bloqueia a Category
-           * com FOR SHARE enquanto
-           * esta transação existir.
-           */
           const categoryAvailable =
             await transaction
               .categories
@@ -128,11 +131,6 @@ export class CreateProductHandler {
             throw new ProductCategoryNotAvailableError();
           }
 
-          /*
-           * Só geramos Product e
-           * ProductCreated depois de
-           * confirmar a Category.
-           */
           const product =
             Product.create(
               {
@@ -140,6 +138,8 @@ export class CreateProductHandler {
                 categoryId,
                 sku,
                 name,
+                brand,
+                description,
               },
               {
                 clock:

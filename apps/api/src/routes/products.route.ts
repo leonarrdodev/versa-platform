@@ -38,6 +38,12 @@ interface CreateProductBody {
 
   readonly categoryId:
     string;
+
+  readonly brand?:
+    string;
+
+  readonly description?:
+    string;
 }
 
 interface GetProductParams {
@@ -122,6 +128,16 @@ export function createProductsRoute(
                 type:
                   'string',
               },
+
+              brand: {
+                type:
+                  'string',
+              },
+
+              description: {
+                type:
+                  'string',
+              },
             },
           },
         },
@@ -181,6 +197,23 @@ export function createProductsRoute(
                   categoryId:
                     request.body
                       .categoryId,
+
+                  ...(request.body.brand ===
+                  undefined
+                    ? {}
+                    : {
+                        brand:
+                          request.body.brand,
+                      }),
+
+                  ...(request.body.description ===
+                  undefined
+                    ? {}
+                    : {
+                        description:
+                          request.body
+                            .description,
+                      }),
                 },
 
                 executionContext,
@@ -253,10 +286,6 @@ export function createProductsRoute(
       },
     );
 
-    /*
-     * Lista paginada dos produtos
-     * já disponíveis no read model.
-     */
     app.get<{
       Querystring:
         GetProductsQuerystring;
@@ -386,7 +415,8 @@ export function createProductsRoute(
             });
 
         if (
-          product === null
+          product ===
+          null
         ) {
           return reply
             .code(404)

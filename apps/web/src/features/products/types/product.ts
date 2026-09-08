@@ -14,11 +14,17 @@ export interface Product {
   readonly categoryId:
     string;
 
+  readonly brand?:
+    string;
+
+  readonly description?:
+    string;
+
   readonly status:
-    'draft' |
-    'active' |
-    'inactive' |
-    'archived';
+    'draft'
+    | 'active'
+    | 'inactive'
+    | 'archived';
 
   readonly createdAt:
     string;

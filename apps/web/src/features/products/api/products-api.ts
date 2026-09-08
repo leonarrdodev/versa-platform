@@ -20,6 +20,12 @@ export interface CreateProductInput {
 
   readonly categoryId:
     string;
+
+  readonly brand?:
+    string;
+
+  readonly description?:
+    string;
 }
 
 export interface CreateProductResult {
@@ -45,11 +51,18 @@ extends Error {
     number;
 
   constructor(
-    message: string,
-    code: string | null,
-    status: number,
+    message:
+      string,
+
+    code:
+      string | null,
+
+    status:
+      number,
   ) {
-    super(message);
+    super(
+      message,
+    );
 
     this.name =
       'ProductsApiError';
@@ -63,8 +76,11 @@ extends Error {
 }
 
 async function readApiError(
-  response: Response,
-): Promise<ProductsApiError> {
+  response:
+    Response,
+): Promise<
+  ProductsApiError
+> {
   let code:
     string | null =
     null;
@@ -112,13 +128,6 @@ Promise<ProductPage> {
     await fetch(
       '/api/products?limit=20&offset=0',
       {
-        /*
-         * A autenticação agora é feita
-         * pelo cookie HttpOnly.
-         *
-         * O frontend não conhece e
-         * não envia tenantId.
-         */
         credentials:
           'include',
       },
@@ -199,9 +208,14 @@ export async function waitForProductProjection(
     350;
 
   for (
-    let attempt = 0;
-    attempt < attempts;
-    attempt += 1
+    let attempt =
+      0;
+
+    attempt <
+    attempts;
+
+    attempt +=
+      1
   ) {
     const response =
       await fetch(
@@ -219,11 +233,6 @@ export async function waitForProductProjection(
         Promise<Product>;
     }
 
-    /*
-     * Durante consistência eventual,
-     * 404 significa simplesmente que
-     * o worker ainda não projetou.
-     */
     if (
       response.status !==
       404
