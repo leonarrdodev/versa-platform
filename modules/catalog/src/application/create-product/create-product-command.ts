@@ -12,8 +12,22 @@ export interface CreateProductCommand {
     string;
 
   readonly brand?:
-    string;
+    string | null;
 
   readonly description?:
-    string;
+    string | null;
+
+  /*
+   * Valores monetários são recebidos
+   * em centavos.
+   *
+   * Exemplo:
+   *
+   * R$ 34,90 -> 3490
+   */
+  readonly costPriceInCents?:
+    number | null;
+
+  readonly salePriceInCents?:
+    number | null;
 }

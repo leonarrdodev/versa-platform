@@ -2,6 +2,10 @@ import type {
   ExecutionContext,
 } from '@versa/observability';
 
+import {
+  Money,
+} from '@versa/shared-kernel';
+
 import type {
   Clock,
   IdGenerator,
@@ -111,6 +115,28 @@ export class CreateProductHandler {
         command.description,
       );
 
+    const costPrice =
+      command.costPriceInCents ===
+      undefined
+        ? null
+        : command.costPriceInCents ===
+          null
+          ? null
+          : Money.fromCents(
+              command.costPriceInCents,
+            );
+
+    const salePrice =
+      command.salePriceInCents ===
+      undefined
+        ? null
+        : command.salePriceInCents ===
+          null
+          ? null
+          : Money.fromCents(
+              command.salePriceInCents,
+            );
+
     return this.dependencies
       .unitOfWork
       .execute(
@@ -140,6 +166,8 @@ export class CreateProductHandler {
                 name,
                 brand,
                 description,
+                costPrice,
+                salePrice,
               },
               {
                 clock:
@@ -193,6 +221,26 @@ export class CreateProductHandler {
 
             categoryId:
               product.categoryId,
+
+            brand:
+              product.brand
+                ?.value ??
+              null,
+
+            description:
+              product.description
+                ?.value ??
+              null,
+
+            costPriceInCents:
+              product.costPrice
+                ?.cents ??
+              null,
+
+            salePriceInCents:
+              product.salePrice
+                ?.cents ??
+              null,
 
             status:
               product.status,

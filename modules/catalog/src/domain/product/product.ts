@@ -14,6 +14,10 @@ import type {
 } from '@versa/shared-kernel';
 
 import type {
+  Money,
+} from '@versa/shared-kernel';
+
+import type {
   CategoryId,
 } from '../identifiers/category-id.js';
 
@@ -74,6 +78,12 @@ export interface CreateProductInput {
 
   readonly description?:
     ProductDescription | null;
+
+  readonly costPrice?:
+    Money | null;
+
+  readonly salePrice?:
+    Money | null;
 }
 
 export interface ProductCreationDependencies {
@@ -108,6 +118,12 @@ interface ProductState {
 
   readonly description:
     ProductDescription | null;
+
+  readonly costPrice:
+    Money | null;
+
+  readonly salePrice:
+    Money | null;
 
   readonly status:
     ProductStatus;
@@ -158,6 +174,14 @@ export class Product {
       input.description ??
       null;
 
+    const costPrice =
+      input.costPrice ??
+      null;
+
+    const salePrice =
+      input.salePrice ??
+      null;
+
     const product =
       new Product({
         id:
@@ -178,6 +202,10 @@ export class Product {
         brand,
 
         description,
+
+        costPrice,
+
+        salePrice,
 
         status:
           INITIAL_PRODUCT_STATUS,
@@ -250,6 +278,22 @@ export class Product {
                 description.value,
             }),
 
+        ...(costPrice ===
+        null
+          ? {}
+          : {
+              costPriceInCents:
+                costPrice.cents,
+            }),
+
+        ...(salePrice ===
+        null
+          ? {}
+          : {
+              salePriceInCents:
+                salePrice.cents,
+            }),
+
         categoryId:
           input.categoryId,
 
@@ -299,6 +343,18 @@ export class Product {
   ProductDescription | null {
     return this.state
       .description;
+  }
+
+  get costPrice():
+  Money | null {
+    return this.state
+      .costPrice;
+  }
+
+  get salePrice():
+  Money | null {
+    return this.state
+      .salePrice;
   }
 
   get status():

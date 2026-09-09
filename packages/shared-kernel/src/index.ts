@@ -26,3 +26,7 @@ export {
 export {
   InvalidValueError,
 } from './errors/invalid-value-error.js';
+
+export {
+  Money,
+} from './money/money.js';
